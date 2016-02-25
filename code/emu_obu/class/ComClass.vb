@@ -17,17 +17,12 @@
     Private REPLY_TYPE As Common.ReplyType
 
     Private comn As New Common
-
-    Private _devicemode As Device = Device.TaxiMeter
+    Private _devicemode As Common.Device
 
 #Region "ENUM"
     Private Enum ConnectionStatus
         Connected = 1
         Disconnected = 0
-    End Enum
-    Public Enum Device
-        TaxiMeter
-        CashlessTerminal
     End Enum
 #End Region
 #Region "PROPERTIES"
@@ -41,11 +36,11 @@
             Return COM.IsOpen
         End Get
     End Property
-    Public Property DeviceMode() As Device
+    Public Property DeviceMode() As Common.Device
         Get
             Return Me._devicemode
         End Get
-        Set(ByVal value As Device)
+        Set(ByVal value As Common.Device)
             Me._devicemode = value
         End Set
     End Property
@@ -97,34 +92,6 @@
         Return _connection
     End Function
 
-    Public Sub SendByte(ByVal message As Byte(), ByVal textString As String)
-        Try
-            RaiseEvent OnEvent(textString, Common.TRX.SEND)
-            buffer = Nothing 'clear buffer for next retrieve
-            COM.Write(message, 0, message.Length)
-            RaiseEvent OnResponse(IIf(_devicemode = Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & textString & ": " & comn.ByteArrayToString(message), Common.ReceiveEvents.DTO)
-        Catch ex As Exception
-            Reset()
-            RaiseEvent OnResponse(IIf(_devicemode = Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & textString & ": " & ex.Message, Common.ReceiveEvents.ERRORS)
-        End Try
-    End Sub
-
-    Public Sub SendSaleTransaction()
-        Try
-            RaiseEvent OnEvent("Sale Transaction", Common.TRX.SEND)
-            '02 00 35 36 30 30 30 30 30 30 30 30 30 31 30 32 30 30 30 30 1C 34 30 00 12 30 30 30 30 30 30 30 30 30 33 30 30 1C 03 16
-            Dim tmp() As Byte = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
-            '_finished_load = False
-            buffer = Nothing 'clear buffer for next retrieve
-            '_timeoutTimer.Start()
-            COM.Write(tmp, 0, tmp.Length)
-            RaiseEvent OnResponse(IIf(_devicemode = Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & "SendSaleTransaction: " & comn.ByteArrayToString(tmp), Common.ReceiveEvents.DTO)
-        Catch ex As Exception
-            Reset()
-            RaiseEvent OnResponse(IIf(_devicemode = Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & "SendSaleTransaction:" & ex.Message, Common.ReceiveEvents.ERRORS)
-        End Try
-    End Sub
-
     Private Sub SendMessage()
         Try
             Dim tmp() As Byte = PRESERVED_ADHOC
@@ -165,72 +132,6 @@
         Catch ex As Exception
             Reset()
             RaiseEvent OnResponse(ENTITY_RSC & "SendAcknowledge:" & ex.Message, Common.ReceiveEvents.ERRORS)
-        End Try
-    End Sub
-
-    Public Sub CurrentMessage()
-        Try
-
-            '_finished_load = False
-            buffer = Nothing 'clear buffer for next retrieve
-            '_timeoutTimer.Start()
-            'COM.Write(COM_ACK_HEX, 0, COM_ACK_HEX.Length)
-            'RaiseEvent OnResponse("Send Acknowledge: " & comn.ByteArrayToString(COM_ACK_HEX), Common.ReceiveEvents.DTO)
-            'RaiseEvent OnEvent("Acknowledge", Common.TRX.SEND)
-            '===========================================================================================================
-
-            Dim DataBytes(-1) As Byte
-            Dim command_str As String = String.Empty
-
-            Dim announce() As Byte = System.Text.Encoding.ASCII.GetBytes(RSC_DATA.Message)
-            Dim CLR() As Byte = System.BitConverter.GetBytes(RSC_DATA.ColorID)
-            Dim FX() As Byte = System.BitConverter.GetBytes(RSC_DATA.EffectID)
-            Dim DURATION() As Byte = System.BitConverter.GetBytes(RSC_DATA.Duration)
-
-            Array.Reverse(DURATION)
-            Array.Resize(CLR, 1)
-            Array.Resize(FX, 1)
-
-            ReDim Preserve DataBytes(UBound(announce))
-            announce.CopyTo(DataBytes, 0)
-            ReDim Preserve DataBytes(UBound(DataBytes) + CLR.Length)
-            CLR.CopyTo(DataBytes, UBound(DataBytes))
-
-            ReDim Preserve DataBytes(UBound(DataBytes) + FX.Length)
-            FX.CopyTo(DataBytes, UBound(DataBytes))
-
-            ReDim Preserve DataBytes(UBound(DataBytes) + DURATION.Length)
-            DURATION.CopyTo(DataBytes, UBound(DataBytes) - UBound(DURATION))
-
-            Dim length() As Byte = System.BitConverter.GetBytes(DataBytes.Length)
-            Array.Resize(length, 1)
-
-            Dim CS As Byte = comn.GetCheckSum(DataBytes)
-            ReDim Preserve DataBytes(UBound(DataBytes) + 1)
-            DataBytes(UBound(DataBytes)) = CS
-
-            Dim newData(0) As Byte
-            newData(0) = STX
-            ReDim Preserve newData(UBound(newData) + 1)
-            newData(UBound(newData)) = COMMAND_READ
-
-            ReDim Preserve newData(UBound(newData) + length.Length)
-            length.CopyTo(newData, UBound(newData) - UBound(length))
-
-            ReDim Preserve newData(UBound(newData) + DataBytes.Length)
-            DataBytes.CopyTo(newData, UBound(newData) - UBound(DataBytes))
-
-            ReDim Preserve newData(UBound(newData) + 1)
-            newData(UBound(newData)) = EOT
-
-            COM.Write(newData, 0, newData.Length)
-            RaiseEvent OnResponse(ENTITY_RSC & "Read Message  " & comn.ByteArrayToString(newData), Common.ReceiveEvents.ERRORS)
-            RaiseEvent OnEvent("Read Message", Common.TRX.SEND)
-
-            '===========================================================================================================
-        Catch ex As Exception
-            Reset()
-            RaiseEvent OnResponse(ENTITY_RSC & "Read Message:" & ex.Message, Common.ReceiveEvents.ERRORS)
         End Try
     End Sub
 
@@ -315,7 +216,7 @@
             SendNAcknowledge()
         Else
             'SendMessage()
-            CurrentMessage()
+
         End If
         RaiseEvent OnEvent("Acknowledge sent.", Common.TRX.SEND)
         Debug.Print("REPLY_COUNTER END")
@@ -365,142 +266,165 @@
             End If
         End If
 
-        If IsNothing(buffer) Then Exit Sub
+        Select Case _devicemode
 
-        If blnEOT = False Then
-            If buffer.Length <= 0 Then Exit Sub
-            arrByte = buffer
-            'If (arrByte(0) = STX) AndAlso (arrByte(UBound(arrByte) - 1) = EOT) Then
-            If Checking(arrByte) = Common.Result.FAIL Then
-                'RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                RaiseEvent OnResponse(ENTITY_OBU & "Invalid Checksum " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+            Case Common.Device.RoofTopSignage
+                RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
                 REPLY_TYPE = Common.ReplyType.NAcknowledge
                 _replyTimer.Start()
-            Else
 
-                Select Case _devicemode
-                    Case Device.TaxiMeter
-                        If arrByte(0) = &H6 Then
-                            RaiseEvent OnResponse(ENTITY_CT & "ACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                            RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
+            Case Else
+                If blnEOT = False Then
+                    If buffer.Length <= 0 Then Exit Sub
+                    arrByte = buffer
+                    If (arrByte(0) = STX) AndAlso (arrByte(UBound(arrByte)) = EOT) Then
+                        If Checking(arrByte) = Common.Result.FAIL Then
+                            'RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Invalid Checksum " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+                            REPLY_TYPE = Common.ReplyType.NAcknowledge
+                            _replyTimer.Start()
                         Else
-                            '2A646E05050102
-                            Dim Send_Report As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H1, &H2} 'HARDCODED
-                            If AreArraysEqual(arrByte, Send_Report) Then
-                                RaiseEvent OnResponse(ENTITY_OBU & "Send Report " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                                RaiseEvent OnEvent("SEND REPORT", Common.TRX.RECEIVE)
+
+                            If arrByte.Length <= 6 Then
+                                If (arrByte(0) = STX) Then
+                                    Select Case arrByte(1)
+                                        Case COMMAND_ACK
+                                            If REPLY_FLAG = False Then
+                                                Select Case arrByte(3)
+                                                    Case &H0
+                                                        RaiseEvent OnEvent("NAcknowledge", Common.TRX.RECEIVE)
+                                                        RaiseEvent OnResponse(ENTITY_OBU & "NACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+                                                        REPLY_TYPE = Common.ReplyType.Acknowledge
+                                                        _replyTimer.Start()
+                                                    Case &H1
+                                                        RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+                                                        RaiseEvent OnResponse(ENTITY_OBU & "ACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+                                                        REPLY_TYPE = Common.ReplyType.Acknowledge
+                                                        _replyTimer.Start()
+                                                End Select
+                                            End If
+                                        Case COMMAND_END_ADHOC
+                                            If REPLY_FLAG = False Then
+                                                'ConvertHexToDec(arrByte(2))
+                                                RaiseEvent OnEvent("Exit ADHOC", Common.TRX.RECEIVE)
+                                                RaiseEvent OnResponse(ENTITY_OBU & "END " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+                                                REPLY_TYPE = Common.ReplyType.Acknowledge
+                                                _replyTimer.Start()
+                                            End If
+                                        Case COMMAND_READ
+                                            If REPLY_FLAG = False Then
+                                                RaiseEvent OnEvent("Read", Common.TRX.RECEIVE)
+                                                RaiseEvent OnResponse(ENTITY_OBU & "READ " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
+                                                REPLY_TYPE = Common.ReplyType.Message
+                                                _replyTimer.Start()
+                                            End If
+                                    End Select
+                                End If
                             Else
-                                '02 03 16 36 30
-                                If arrByte(0) = STX And (arrByte(3) = &H36 And arrByte(4) = &H30) Then
-                                    RaiseEvent OnResponse(ENTITY_CT & "Transaction Approval " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                                    RaiseEvent OnEvent("TRANSACTION APPROVAL", Common.TRX.RECEIVE)
+                                If arrByte(1) = COMMAND_START_ADHOC Then
+                                    If REPLY_FLAG = False Then
+
+                                        'ProcessAdhoc(arrByte)
+
+                                        PRESERVED_ADHOC = arrByte
+                                        RaiseEvent OnEvent("ADHOC", Common.TRX.RECEIVE)
+                                        RaiseEvent OnResponse(ENTITY_OBU & "ADHOC " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
+                                        REPLY_TYPE = Common.ReplyType.Acknowledge
+                                        _replyTimer.Start()
+                                    End If
                                 Else
-                                    RaiseEvent OnResponse(ENTITY_CT & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
                                     RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
+                                    REPLY_TYPE = Common.ReplyType.NAcknowledge
+                                    _replyTimer.Start()
                                 End If
                             End If
                         End If
+                        '_finished_load = True
+                    Else
+                        Select Case _devicemode
+                            Case Common.Device.TaxiMeter
+                                Dim STX As Byte = &H2
+                                Dim ETX As Byte = &H3
 
-                    Case Device.CashlessTerminal
-                        If arrByte(0) = &H6 Then
-                            RaiseEvent OnResponse(ENTITY_TM & "ACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                            RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
-                        Else
-                            '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
-                            Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
-                            If AreArraysEqual(arrByte, Sale_Transaction) Then
-                                RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                                RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
-                            Else
-                                RaiseEvent OnResponse(ENTITY_TM & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                                RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                            End If
+                                If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+                                    RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
 
-                        End If
+                                    Dim k(1) As Byte
+                                    k(0) = arrByte(15)
+                                    k(1) = arrByte(16)
+                                    Debug.Print("Transaction code " & comn.ByteArrayToString(k))
 
-                End Select
+                                    k(0) = arrByte(17)
+                                    k(1) = arrByte(18)
+                                    Debug.Print("Response code " & comn.ByteArrayToString(k))
 
-            End If
-            '_finished_load = True
-            'End If
-        End If
-    End Sub
+                                    ReDim k(0)
+                                    k(0) = arrByte(19)
+                                    Debug.Print("More indicator " & comn.ByteArrayToString(k))
 
-    Private Sub ProcessAdhoc(ByVal arrbyte() As Byte)
+                                    k(0) = arrByte(20)
+                                    Debug.Print("Field separator " & comn.ByteArrayToString(k))
 
-        Dim len As Integer = Convert.ToInt32(arrbyte(2))
+                                    ReDim k(1)
+                                    k(0) = arrByte(21)
+                                    k(1) = arrByte(22)
+                                    Debug.Print("Field type " & comn.ByteArrayToString(k))
 
-        Dim data(len - 1) As Byte
-        Dim dur(3) As Byte
+                                    k(0) = arrByte(23)
+                                    k(1) = arrByte(24)
+                                    Debug.Print("Field length " & comn.ByteArrayToString(k))
 
-        Array.ConstrainedCopy(arrbyte, 3, data, 0, len)
-        Array.ConstrainedCopy(data, UBound(data) - 3, dur, 0, 4)
+                                    'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
+                                    'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
 
-        Dim str As String = String.Empty
+                                    RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
 
-        For i = 0 To UBound(data)
-            If i <= UBound(data) - 6 Then
-                str &= Convert.ToChar(data(i))
-            Else
-                Select Case i
-                    Case UBound(data) - 5
-                        RSC_DATA.ColorID = Convert.ToInt32(data(i))
-                    Case UBound(data) - 4
-                        RSC_DATA.EffectID = Convert.ToInt32(data(i))
-                End Select
-            End If
-        Next
+                                Else
+                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_TM & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                End If
+                                Array.Resize(buffer, 0)
+                            Case Common.Device.CashlessTerminal
+                                Dim STX As Byte = &H2
+                                Dim ETX As Byte = &H3
+                                If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+                                    RaiseEvent OnEvent("X", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_CT & "x " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                Else
+                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_CT & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                End If
+                                Array.Resize(buffer, 0)
+                        End Select
+                    End If
+                End If
 
-        Array.Reverse(dur)
-        RSC_DATA.Message = str
-        RSC_DATA.Duration = System.BitConverter.ToInt32(dur, 0)
+
+        End Select
 
     End Sub
 
 #End Region
 #Region "COMMON"
 
-    Private Function AreArraysEqual(Of T)(ByVal a As T(), ByVal b() As T) As Boolean
-
-        'IF 2 NULL REFERENCES WERE PASSED IN, THEN RETURN TRUE, YOU MAY WANT TO RETURN FALSE
-        If a Is Nothing AndAlso b Is Nothing Then Return True
-
-        'CHECK THAT THERE IS NOT 1 NULL REFERENCE ARRAY
-        If a Is Nothing Or b Is Nothing Then Return False
-
-        'AT THIS POINT NEITHER ARRAY IS NULL
-        'IF LENGTHS DON'T MATCH, THEY ARE NOT EQUAL
-        If a.Length <> b.Length Then Return False
-
-        'LOOP ARRAYS TO COMPARE CONTENTS
-        For i As Integer = 0 To a.GetUpperBound(0)
-            'RETURN FALSE AS SOON AS THERE IS NO MATCH
-            If Not a(i).Equals(b(i)) Then Return False
-        Next
-
-        'IF WE GOT HERE, THE ARRAYS ARE EQUAL
-        Return True
-
-    End Function
-
     Private Function Checking(ByVal arrByte() As Byte) As Common.Result
         Try
-            'Dim nSize As Integer = ConvertHexToDec(ConvertDecToHex(arrByte(2)))
-            'Dim newarr(nSize - 1) As Byte
-            'Dim nCS As Byte = arrByte(2 + nSize + 1)
+            Dim nSize As Integer = ConvertHexToDec(ConvertDecToHex(arrByte(2)))
+            Dim newarr(nSize - 1) As Byte
+            Dim nCS As Byte = arrByte(2 + nSize + 1)
 
-            'Array.Copy(arrByte, 3, newarr, 0, nSize)
+            Array.Copy(arrByte, 3, newarr, 0, nSize)
 
-            'Debug.Print(nSize)
-            'Debug.Print(nCS & vbTab & comn.GetCheckSum(newarr))
+            Debug.Print(nSize)
+            Debug.Print(nCS & vbTab & comn.GetCheckSum(newarr))
 
-            'If nCS = comn.GetCheckSum(newarr) Then
-            Return Common.Result.SUCCESS
-            'Else
-            '    Return Common.Result.FAIL
-            'End If
+            If nCS = comn.GetCheckSum(newarr) Then
+                Return Common.Result.SUCCESS
+            Else
+                Return Common.Result.FAIL
+            End If
 
         Catch ex As Exception
             Debug.Print("CS ERROR")

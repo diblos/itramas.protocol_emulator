@@ -1,7 +1,7 @@
 ﻿Public Class Form1
 
     Dim nTitle As String
-    Dim nSize As New Size(700, 400)
+    Dim nSize As New Size(600, 400)
     Dim cmn As New Common
     Dim CLEARLIST As Boolean = True
 
