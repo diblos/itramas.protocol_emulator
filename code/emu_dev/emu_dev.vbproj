@@ -79,7 +79,6 @@
     <Compile Include="class\Common.vb">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="class\OBUDataClass.vb" />
     <Compile Include="class\TCPClass.vb" />
     <Compile Include="class\TimerClass.vb" />
     <Compile Include="class\ComClass.vb" />

@@ -207,12 +207,15 @@
     End Sub
 
     Private Sub btnCOM_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
+        Dim baudrate As Integer
         Try
             If Not nCOM.IsConnected Then
                 If EMUMODE = EmulatorMode.TaxiMeter Then
-                    nCOM.Connect(ComboCOM.SelectedItem.Replace("COM", ""))
+                    baudrate = CInt(ComboBaud.Text)
+                    nCOM.Connect(ComboCOM.SelectedItem.Replace("COM", ""), baudrate)
                 Else
-                    nCOM.Connect(ComboCOM2.SelectedItem.Replace("COM", ""))
+                    baudrate = CInt(ComboBaud2.Text)
+                    nCOM.Connect(ComboCOM2.SelectedItem.Replace("COM", ""), baudrate)
                 End If
 
                 If nCOM.IsConnected = True Then
@@ -230,9 +233,9 @@
             End If
 
             If EMUMODE = EmulatorMode.TaxiMeter Then
-                nCOM.DeviceMode = ComClass.Device.TaxiMeter
+                nCOM.DeviceMode = Common.Device.TaxiMeter
             Else
-                nCOM.DeviceMode = ComClass.Device.CashlessTerminal
+                nCOM.DeviceMode = Common.Device.CashlessTerminal
             End If
 
             lstMsgs(nCOM.PortName & " is " & IIf(nCOM.IsConnected = True, "Connected", "Disconnected"))
@@ -398,14 +401,14 @@
                             nCOM.SendByte(reply, "Acknowledge")
                     End Select
 
-                Case "TRANSACTION APPROVAL"
+                Case "SALE APPROVAL"
                     Select Case EMUMODE
                         Case EmulatorMode.TaxiMeter
                             Dim reply() As Byte = {&H6} 'ACK
                             nCOM.SendByte(reply, "Acknowledge")
 
                         Case EmulatorMode.CashlessTerminal
-                          
+
                     End Select
 
                 Case Else
@@ -447,8 +450,6 @@
                     lstMsgs(nData)
                 Case Common.ReceiveEvents.TIMEOUT
                     lstMsgs("Request time out!")
-                Case Common.ReceiveEvents.CLR
-                    lstMsgs("Empty log!")
                 Case Common.ReceiveEvents.DTO
                     'Dim newRow As DataRow
                     'newRow = tmpData.NewRow
@@ -460,7 +461,7 @@
                     'tmpData.Rows.Add(newRow)
 
                     'newRow = Nothing
-
+                Case Common.ReceiveEvents.LOG
                     lstMsgs(nData)
 
             End Select

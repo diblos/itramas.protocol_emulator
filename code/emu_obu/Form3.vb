@@ -180,6 +180,9 @@ Public Class Form3
         AddHandler btnCOM_TM.Click, AddressOf btnCOM_Click
         AddHandler btnCOM_CT.Click, AddressOf btnCOM_Click
         AddHandler btnCOM_RTS.Click, AddressOf btnCOM_Click
+
+        AddHandler nCOM_TM.OnForwarding, AddressOf nCOM_OnForwarding
+        AddHandler nCOM_CT.OnForwarding, AddressOf nCOM_OnForwarding
         '=================================================
         'Dim cmmn As New Common
         'cmmn.DownloadFtpFiles()
@@ -308,12 +311,14 @@ Public Class Form3
 
     Private Sub btnCOM_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
         Dim btn As Button = DirectCast(sender, Button)
+        Dim baudrate As Integer
         Try
             Select Case btn.Name
                 Case "btnCOM_TM"
                     If Not nCOM_TM.IsConnected Then
+                        baudrate = CInt(ComboBaud_TM.Text)
                         nCOM_TM.DeviceMode = Common.Device.TaxiMeter
-                        nCOM_TM.Connect(ComboCOM_TM.SelectedItem.Replace("COM", ""))
+                        nCOM_TM.Connect(ComboCOM_TM.SelectedItem.Replace("COM", ""), baudrate)
 
                         If nCOM_TM.IsConnected = True Then
                             SetLabelStatus(Label_Stat_TM, DEVICE_LABEL_ONLINE)
@@ -337,8 +342,9 @@ Public Class Form3
 
                 Case "btnCOM_CT"
                     If Not nCOM_CT.IsConnected Then
+                        baudrate = CInt(ComboBaud_CT.Text)
                         nCOM_CT.DeviceMode = Common.Device.CashlessTerminal
-                        nCOM_CT.Connect(ComboCOM_CT.SelectedItem.Replace("COM", ""))
+                        nCOM_CT.Connect(ComboCOM_CT.SelectedItem.Replace("COM", ""), baudrate)
 
                         If nCOM_CT.IsConnected = True Then
                             SetLabelStatus(Label_Stat_CT, DEVICE_LABEL_ONLINE)
@@ -362,8 +368,9 @@ Public Class Form3
 
                 Case "btnCOM_RTS"
                     If Not nCOM_RTS.IsConnected Then
+                        baudrate = CInt(ComboBaud_RTS.Text)
                         nCOM_RTS.DeviceMode = Common.Device.RoofTopSignage
-                        nCOM_RTS.Connect(ComboCOM_RTS.SelectedItem.Replace("COM", ""))
+                        nCOM_RTS.Connect(ComboCOM_RTS.SelectedItem.Replace("COM", ""), baudrate)
 
                         If nCOM_RTS.IsConnected = True Then
                             SetLabelStatus(Label_Stat_RTS, DEVICE_LABEL_ONLINE)
@@ -403,11 +410,9 @@ Public Class Form3
                     lstMsgs(nData)
                 Case Common.ReceiveEvents.TIMEOUT
                     lstMsgs("Request time out!")
-                Case Common.ReceiveEvents.CLR
-                    lstMsgs("Empty log!")
                 Case Common.ReceiveEvents.DTO
 
-                Case Common.ReceiveEvents.LOG
+                Case Common.ReceiveEvents.LOg
                     lstMsgs(nData)
 
             End Select
@@ -425,8 +430,6 @@ Public Class Form3
                     lstMsgs(nData)
                 Case Common.ReceiveEvents.TIMEOUT
                     lstMsgs("Request time out!")
-                Case Common.ReceiveEvents.CLR
-                    lstMsgs("Empty log!")
                 Case Common.ReceiveEvents.DTO
                     'Dim newRow As DataRow
                     'newRow = tmpData.NewRow
@@ -457,8 +460,6 @@ Public Class Form3
                     lstMsgs(nData)
                 Case Common.ReceiveEvents.TIMEOUT
                     lstMsgs("Request time out!")
-                Case Common.ReceiveEvents.CLR
-                    lstMsgs("Empty log!")
                 Case Common.ReceiveEvents.DTO
                     'Dim newRow As DataRow
                     'newRow = tmpData.NewRow
@@ -540,6 +541,18 @@ Public Class Form3
         End With
     End Sub
 
+    Private Sub nCOM_OnForwarding(ByVal Data() As Byte, ByVal destination As Common.Device)
+        Try
+            Select Case destination
+                Case Common.Device.TaxiMeter
+                    If nCOM_TM.IsConnected Then nCOM_TM.SendByte(Data, "Forwarding")
+                Case Common.Device.CashlessTerminal
+                    If nCOM_CT.IsConnected Then nCOM_CT.SendByte(Data, "Forwarding")
+            End Select
+        Catch ex As Exception
+
+        End Try
+    End Sub
 End Class
 
 Public Class LabeldeviceStatus

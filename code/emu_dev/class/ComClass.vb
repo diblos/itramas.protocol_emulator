@@ -43,17 +43,17 @@
 #End Region
 #Region "PUBLIC METHODS"
     Public Sub New()
-        InitiateComPort(1)
+        InitiateComPort(1, 115200)
     End Sub
 
-    Public Sub New(ByVal ComPort As Integer)
-        InitiateComPort(ComPort)
+    Public Sub New(ByVal ComPort As Integer, Optional ByVal BaudRate As Integer = 115200)
+        InitiateComPort(ComPort, BaudRate)
     End Sub
 
-    Public Function Connect(ByRef comPort As Integer) As String
+    Public Function Connect(ByRef comPort As Integer, Optional ByVal BaudRate As Integer = 115200) As String
         _connection = ConnectionStatus.Disconnected
         If ComparePortname(comPort) = False Then
-            InitiateComPort(comPort)
+            InitiateComPort(comPort, BaudRate)
         End If
         Try
             COM.Open()
@@ -237,7 +237,7 @@
         End If
     End Function
 
-    Private Sub InitiateComPort(ByVal ComPort As Integer)
+    Private Sub InitiateComPort(ByVal ComPort As Integer, ByVal BaudRate As Integer)
         ' Create a new SerialPort object with default settings.
         If IsNothing(COM) Then
             COM = New System.IO.Ports.SerialPort
@@ -247,7 +247,7 @@
 
         ' Allow the user to set the appropriate properties.
         COM.PortName = "COM" & CStr(ComPort)
-        COM.BaudRate = 115200
+        COM.BaudRate = BaudRate
         COM.Parity = System.IO.Ports.Parity.None
         COM.DataBits = 8
         COM.StopBits = System.IO.Ports.StopBits.One

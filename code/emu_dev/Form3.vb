@@ -387,8 +387,6 @@ Public Class Form3
                     lstMsgs(nData)
                 Case Common.ReceiveEvents.TIMEOUT
                     lstMsgs("Request time out!")
-                Case Common.ReceiveEvents.CLR
-                    lstMsgs("Empty log!")
                 Case Common.ReceiveEvents.DTO
                     'Dim newRow As DataRow
                     'newRow = tmpData.NewRow

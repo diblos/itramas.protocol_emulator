@@ -68,6 +68,7 @@
     Public Sub Initialization()
         APPLICATION_NAME = IIf(Configuration.ConfigurationManager.AppSettings("APPNAME") = "", "", Configuration.ConfigurationManager.AppSettings("APPNAME"))
         If Not Configuration.ConfigurationManager.AppSettings("OBU.IP") = "" Then OBU_IP = Configuration.ConfigurationManager.AppSettings("OBU.IP")
+
     End Sub
 
 End Module

@@ -2,48 +2,7 @@
 Imports System.IO
 
 Public Class Common
-    Public Enum Device
-        RoofTopSignage
-        DriverConsole
-        RearSeatMonitor
-    End Enum
-
-    Public Enum Result
-        SUCCESS
-        FAIL
-        NULL
-    End Enum
-
-    Public Enum TRX
-        SEND
-        RECEIVE
-    End Enum
-
-    Public Enum ReceiveEvents
-        TIMEOUT
-        CLR
-        DTO
-        ERRORS
-    End Enum
-
-    Public Enum ReplyType
-        Acknowledge
-        NAcknowledge
-        Message
-    End Enum
-
-    Public Enum RequestUpdateType
-        DriverInformation
-        ContextUpdate
-    End Enum
-
-    Public Function OBUData2String()
-        Return String.Empty
-    End Function
-
-    Public Function String2OBUData() As OBUDataClass
-        Return New OBUDataClass
-    End Function
+    Inherits emu_common.Common
 
     'Dim input As String = "The data from the scale"
     'Dim hexData() As Byte = System.Text.Encoding.ASCII.GetBytes(input)

@@ -118,13 +118,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Fasticon-Hand-Draw-Iphone-YouTube.ico" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\emu_common\emu_common.vbproj">
       <Project>{EBFA903D-18AF-474B-986D-3E80448410F3}</Project>
       <Name>emu_common</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Fasticon-Hand-Draw-Iphone-YouTube.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

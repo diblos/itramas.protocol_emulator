@@ -5,6 +5,49 @@ Imports System.Net
 Imports System.IO
 
 Public Class Common
+
+#Region "Enumerations"
+    Public Enum Result
+        SUCCESS
+        FAIL
+        NULL
+    End Enum
+
+    Public Enum TRX
+        SEND
+        RECEIVE
+    End Enum
+
+    Public Enum ReceiveEvents
+        TIMEOUT
+        DTO
+        LOG
+        ERRORS
+    End Enum
+
+    Public Enum ReplyType
+        Acknowledge
+        NAcknowledge
+        Message
+    End Enum
+
+    Public Enum RequestUpdateType
+        DriverInformation
+        ContextUpdate
+    End Enum
+
+    Public Function OBUData2String()
+        Return String.Empty
+    End Function
+
+    Public Enum Device
+        RoofTopSignage
+        DriverConsole
+        RearSeatMonitor
+        TaxiMeter
+        CashlessTerminal
+    End Enum
+
     Public Enum RooftopSignageColor
         Red = 0
         Green = 1
@@ -31,4 +74,10 @@ Public Class Common
         Wrong_Info = 2
         Not_Supported = 3
     End Enum
+#End Region
+
+#Region "Methods"
+
+#End Region
+
 End Class

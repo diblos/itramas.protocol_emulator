@@ -36,7 +36,7 @@
             Return COM.IsOpen
         End Get
     End Property
-    Public Property DeviceMode() As Common.Device
+    Public Property DeviceMode() As Common.device
         Get
             Return Me._devicemode
         End Get
@@ -47,19 +47,20 @@
 #End Region
 #Region "PUBLIC METHODS"
     Public Sub New()
-        InitiateComPort(1)
+        InitiateComPort(1, 115200)
     End Sub
 
-    Public Sub New(ByVal ComPort As Integer)
-        InitiateComPort(ComPort)
+    Public Sub New(ByVal ComPort As Integer, Optional ByVal BaudRate As Integer = 115200)
+        InitiateComPort(ComPort, BaudRate)
     End Sub
 
-    Public Function Connect(ByRef comPort As Integer) As String
+    Public Function Connect(ByRef comPort As Integer, Optional ByVal BaudRate As Integer = 115200) As String
         _connection = ConnectionStatus.Disconnected
         If ComparePortname(comPort) = False Then
-            InitiateComPort(comPort)
+            InitiateComPort(comPort, BaudRate)
         End If
         Try
+            RaiseEvent OnResponse("COM" & comPort & ", Baudrate " & BaudRate & " selected.", emu_common.Common.ReceiveEvents.LOG)
             COM.Open()
             _connection = ConnectionStatus.Connected
 
@@ -92,6 +93,28 @@
         Return _connection
     End Function
 
+    Public Sub SendByte(ByVal message As Byte(), ByVal textString As String)
+        Try
+            RaiseEvent OnEvent(textString, Common.TRX.SEND)
+            buffer = Nothing 'clear buffer for next retrieve
+            COM.Write(message, 0, message.Length)
+            If textString.ToUpper = "FORWARDING" Then
+                RaiseEvent OnResponse(ENTITY_OBU & textString & ": " & comn.ByteArrayToString(message), Common.ReceiveEvents.LOG)
+            Else
+                RaiseEvent OnResponse(IIf(_devicemode = Common.Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & textString & ": " & comn.ByteArrayToString(message), Common.ReceiveEvents.LOG)
+            End If
+
+        Catch ex As Exception
+            Reset()
+            If textString.ToUpper = "FORWARDING" Then
+                RaiseEvent OnResponse(ENTITY_OBU & textString & ": " & ex.Message, Common.ReceiveEvents.ERRORS)
+            Else
+                RaiseEvent OnResponse(IIf(_devicemode = Common.Device.TaxiMeter, ENTITY_TM, ENTITY_CT) & textString & ": " & ex.Message, Common.ReceiveEvents.ERRORS)
+            End If
+
+        End Try
+    End Sub
+
     Private Sub SendMessage()
         Try
             Dim tmp() As Byte = PRESERVED_ADHOC
@@ -100,7 +123,7 @@
             buffer = Nothing 'clear buffer for next retrieve
             '_timeoutTimer.Start()
             COM.Write(tmp, 0, tmp.Length)
-            RaiseEvent OnResponse(ENTITY_RSC & "SendMessage: " & comn.ByteArrayToString(tmp), Common.ReceiveEvents.DTO)
+            RaiseEvent OnResponse(ENTITY_RSC & "SendMessage: " & comn.ByteArrayToString(tmp), Common.ReceiveEvents.LOG)
         Catch ex As Exception
             Reset()
             RaiseEvent OnResponse(ENTITY_RSC & "SendMessage:" & ex.Message, Common.ReceiveEvents.ERRORS)
@@ -113,7 +136,7 @@
             buffer = Nothing 'clear buffer for next retrieve
             '_timeoutTimer.Start()
             COM.Write(COM_ACK_HEX, 0, COM_ACK_HEX.Length)
-            RaiseEvent OnResponse(ENTITY_RSC & "SendAcknowledge: " & comn.ByteArrayToString(COM_ACK_HEX), Common.ReceiveEvents.DTO)
+            RaiseEvent OnResponse(ENTITY_RSC & "SendAcknowledge: " & comn.ByteArrayToString(COM_ACK_HEX), Common.ReceiveEvents.LOG)
             RaiseEvent OnEvent("SendAcknowledge", Common.TRX.SEND)
         Catch ex As Exception
             Reset()
@@ -127,7 +150,7 @@
             buffer = Nothing 'clear buffer for next retrieve
             '_timeoutTimer.Start()
             COM.Write(COM_NACK_HEX, 0, COM_NACK_HEX.Length)
-            RaiseEvent OnResponse(ENTITY_RSC & "Send NAcknowledge: " & comn.ByteArrayToString(COM_NACK_HEX), Common.ReceiveEvents.DTO)
+            RaiseEvent OnResponse(ENTITY_RSC & "Send NAcknowledge: " & comn.ByteArrayToString(COM_NACK_HEX), Common.ReceiveEvents.LOG)
             RaiseEvent OnEvent("NAcknowledge", Common.TRX.SEND)
         Catch ex As Exception
             Reset()
@@ -137,6 +160,7 @@
 
     Public Event OnResponse(ByVal nLog As Object, ByVal value As Common.ReceiveEvents)
     Public Event OnEvent(ByVal nLog As Object, ByVal value As Common.TRX)
+    Public Event OnForwarding(ByVal Data() As Byte, ByVal destination As Common.Device)
 
 #End Region
 
@@ -175,7 +199,7 @@
         End If
     End Function
 
-    Private Sub InitiateComPort(ByVal ComPort As Integer)
+    Private Sub InitiateComPort(ByVal ComPort As Integer, ByVal BaudRate As Integer)
         ' Create a new SerialPort object with default settings.
         If IsNothing(COM) Then
             COM = New System.IO.Ports.SerialPort
@@ -185,7 +209,7 @@
 
         ' Allow the user to set the appropriate properties.
         COM.PortName = "COM" & CStr(ComPort)
-        COM.BaudRate = 115200
+        COM.BaudRate = BaudRate
         COM.Parity = System.IO.Ports.Parity.None
         COM.DataBits = 8
         COM.StopBits = System.IO.Ports.StopBits.One
@@ -269,10 +293,14 @@
         Select Case _devicemode
 
             Case Common.Device.RoofTopSignage
-                RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                REPLY_TYPE = Common.ReplyType.NAcknowledge
-                _replyTimer.Start()
+                If blnEOT = False Then
+                    If buffer.Length <= 0 Then Exit Sub
+                    arrByte = buffer
+                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                    RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                    REPLY_TYPE = Common.ReplyType.NAcknowledge
+                    _replyTimer.Start()
+                End If
 
             Case Else
                 If blnEOT = False Then
@@ -329,13 +357,13 @@
 
                                         PRESERVED_ADHOC = arrByte
                                         RaiseEvent OnEvent("ADHOC", Common.TRX.RECEIVE)
-                                        RaiseEvent OnResponse(ENTITY_OBU & "ADHOC " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
+                                        RaiseEvent OnResponse(ENTITY_OBU & "ADHOC " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                                         REPLY_TYPE = Common.ReplyType.Acknowledge
                                         _replyTimer.Start()
                                     End If
                                 Else
                                     RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
+                                    RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                                     REPLY_TYPE = Common.ReplyType.NAcknowledge
                                     _replyTimer.Start()
                                 End If
@@ -347,54 +375,69 @@
                             Case Common.Device.TaxiMeter
                                 Dim STX As Byte = &H2
                                 Dim ETX As Byte = &H3
-
-                                If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
-                                    RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
-
-                                    Dim k(1) As Byte
-                                    k(0) = arrByte(15)
-                                    k(1) = arrByte(16)
-                                    Debug.Print("Transaction code " & comn.ByteArrayToString(k))
-
-                                    k(0) = arrByte(17)
-                                    k(1) = arrByte(18)
-                                    Debug.Print("Response code " & comn.ByteArrayToString(k))
-
-                                    ReDim k(0)
-                                    k(0) = arrByte(19)
-                                    Debug.Print("More indicator " & comn.ByteArrayToString(k))
-
-                                    k(0) = arrByte(20)
-                                    Debug.Print("Field separator " & comn.ByteArrayToString(k))
-
-                                    ReDim k(1)
-                                    k(0) = arrByte(21)
-                                    k(1) = arrByte(22)
-                                    Debug.Print("Field type " & comn.ByteArrayToString(k))
-
-                                    k(0) = arrByte(23)
-                                    k(1) = arrByte(24)
-                                    Debug.Print("Field length " & comn.ByteArrayToString(k))
-
-                                    'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.DTO)
-                                    'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
-
-                                    RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
-
+                                Dim ACK As Byte = &H6
+                                If arrByte(0) = ACK Then
+                                    RaiseEvent OnResponse(ENTITY_TM & "Acknowledge " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    RaiseEvent OnForwarding(arrByte, Common.Device.CashlessTerminal)
                                 Else
-                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                    RaiseEvent OnResponse(ENTITY_TM & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+
+                                        Dim k(1) As Byte
+                                        k(0) = arrByte(15)
+                                        k(1) = arrByte(16)
+                                        Debug.Print("Transaction code " & comn.ByteArrayToString(k))
+
+                                        k(0) = arrByte(17)
+                                        k(1) = arrByte(18)
+                                        Debug.Print("Response code " & comn.ByteArrayToString(k))
+
+                                        ReDim k(0)
+                                        k(0) = arrByte(19)
+                                        Debug.Print("More indicator " & comn.ByteArrayToString(k))
+
+                                        k(0) = arrByte(20)
+                                        Debug.Print("Field separator " & comn.ByteArrayToString(k))
+
+                                        ReDim k(1)
+                                        k(0) = arrByte(21)
+                                        k(1) = arrByte(22)
+                                        Debug.Print("Field type " & comn.ByteArrayToString(k))
+
+                                        k(0) = arrByte(23)
+                                        k(1) = arrByte(24)
+                                        Debug.Print("Field length " & comn.ByteArrayToString(k))
+
+                                        'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.log)
+                                        'RaiseEvent OnResponse(ENTITY_TM & "X " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+
+                                        RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+
+                                        RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
+                                        RaiseEvent OnForwarding(arrByte, Common.Device.CashlessTerminal)
+
+                                    Else
+                                        RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                                        RaiseEvent OnResponse(ENTITY_TM & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    End If
                                 End If
+
                                 Array.Resize(buffer, 0)
                             Case Common.Device.CashlessTerminal
                                 Dim STX As Byte = &H2
                                 Dim ETX As Byte = &H3
-                                If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
-                                    RaiseEvent OnEvent("X", Common.TRX.RECEIVE)
-                                    RaiseEvent OnResponse(ENTITY_CT & "x " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                Dim ACK As Byte = &H6
+                                If arrByte(0) = ACK Then
+                                    RaiseEvent OnResponse(ENTITY_CT & "Acknowledge " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    RaiseEvent OnForwarding(arrByte, Common.Device.TaxiMeter)
                                 Else
-                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                    RaiseEvent OnResponse(ENTITY_CT & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+                                        RaiseEvent OnEvent("Sale approval", Common.TRX.RECEIVE)
+                                        RaiseEvent OnResponse(ENTITY_CT & "Sale approval " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                        RaiseEvent OnForwarding(arrByte, Common.Device.TaxiMeter)
+                                    Else
+                                        RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                                        RaiseEvent OnResponse(ENTITY_CT & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    End If
                                 End If
                                 Array.Resize(buffer, 0)
                         End Select
