@@ -159,7 +159,7 @@ Public Class Form3
             .ForeColor = Color.Lime
         End With
 
-        Dim minToTray As New clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
+        Dim minToTray As New emu_common.clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
 
         SetComboValues()
 

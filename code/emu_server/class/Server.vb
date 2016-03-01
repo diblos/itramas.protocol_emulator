@@ -8,7 +8,7 @@ Class Server
     Private _listenThread As Thread
 
     Public Event ReceiveData(ByVal data As String)
-    Public Event ClientEvent(ByVal client As Client)
+    Public Event ClientEvent(ByVal client As emu_common.Client)
     Public Event OnEvent(ByVal nLog As Object, ByVal value As Common.TRX)
 
     Dim kommon As New Common
@@ -84,7 +84,7 @@ Class Server
         Dim clientStream As NetworkStream
         Dim message As Byte()
         Dim bytesRead As Integer
-        Dim aClient As Client
+        Dim aClient As emu_common.Client
 
         Try
             tcpClient = DirectCast(client, TcpClient)
@@ -115,7 +115,7 @@ Class Server
                 End If
 
                 Try
-                    aClient = New Client(kommon.ParseData(ByteToHex(message, 0, bytesRead)).GetTrackerID, ipend.ToString)
+                    aClient = New emu_common.Client(kommon.ParseData(ByteToHex(message, 0, bytesRead)).GetTrackerID, ipend.ToString)
                     RaiseEvent ClientEvent(aClient)
                 Catch ex As Exception
 

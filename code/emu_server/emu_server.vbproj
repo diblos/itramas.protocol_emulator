@@ -68,10 +68,10 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="class\Client.vb" />
-    <Compile Include="class\clsMinToTray.vb" />
     <Compile Include="class\Common.vb" />
-    <Compile Include="class\Message.vb" />
+    <Compile Include="class\Message.vb">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="class\Server.vb" />
     <Compile Include="Form1.vb">
       <SubType>Form</SubType>

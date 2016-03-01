@@ -14,11 +14,6 @@
     Public SELECTED_CONNECTION As String = String.Empty
     Public APPLICATION_NAME As String = String.Empty
 
-    Public DEFAULT_DRIVER_NAME As String = "Mr Taxi"
-    Public DEFAULT_DRIVER_PASSWORD As String = "1234567890"
-    Public DEFAULT_TRACKERID As String = "NR09G03514"
-    Public DEFAULT_PLATENO As String = "WMU232C"
-
     Public Const DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss"
     Public dec0F As Integer = Convert.ToInt32("0x0F", 16)
     Public dec1F As Integer = Convert.ToInt32("0x1F", 16)

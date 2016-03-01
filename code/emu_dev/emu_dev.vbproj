@@ -73,14 +73,10 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="class\AVL_Raw_DTO.vb" />
-    <Compile Include="class\AVL_Raw_Srv.vb" />
-    <Compile Include="class\clsMinToTray.vb" />
     <Compile Include="class\Common.vb">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="class\TCPClass.vb" />
-    <Compile Include="class\TimerClass.vb" />
     <Compile Include="class\ComClass.vb" />
     <Compile Include="Form3.Designer.vb">
       <DependentUpon>Form3.vb</DependentUpon>

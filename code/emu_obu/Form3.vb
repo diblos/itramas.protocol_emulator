@@ -163,7 +163,7 @@ Public Class Form3
         SetLabelStatus(Label_Stat_CT, DEVICE_LABEL_OFFLINE)
         SetLabelStatus(Label_Stat_RTS, DEVICE_LABEL_OFFLINE)
 
-        Dim minToTray As New clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
+        Dim minToTray As New emu_common.clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
 
         SetComboValues()
 

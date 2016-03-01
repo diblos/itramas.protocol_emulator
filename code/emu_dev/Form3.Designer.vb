@@ -22,6 +22,7 @@ Partial Class Form3
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form3))
         Me.GroupVerbose = New System.Windows.Forms.GroupBox
         Me.ListBox1 = New System.Windows.Forms.ListBox
         Me.Group1 = New System.Windows.Forms.GroupBox
@@ -56,6 +57,7 @@ Partial Class Form3
         Me.DataGridView1 = New System.Windows.Forms.DataGridView
         Me.TabPage5 = New System.Windows.Forms.TabPage
         Me.gbTaxi = New System.Windows.Forms.GroupBox
+        Me.btnValidatetaxi = New System.Windows.Forms.Button
         Me.btnUpdateTaxi = New System.Windows.Forms.Button
         Me.Label7 = New System.Windows.Forms.Label
         Me.Label8 = New System.Windows.Forms.Label
@@ -73,7 +75,6 @@ Partial Class Form3
         Me.btnContextUpdate_RSM = New System.Windows.Forms.Button
         Me.cbSOS_RSM = New System.Windows.Forms.CheckBox
         Me.StatusStrip1 = New System.Windows.Forms.StatusStrip
-        Me.btnValidatetaxi = New System.Windows.Forms.Button
         Me.GroupVerbose.SuspendLayout()
         Me.Group1.SuspendLayout()
         Me.TabControl1.SuspendLayout()
@@ -447,6 +448,15 @@ Partial Class Form3
         Me.gbTaxi.TabStop = False
         Me.gbTaxi.Text = "Update Taxi profile"
         '
+        'btnValidatetaxi
+        '
+        Me.btnValidatetaxi.Location = New System.Drawing.Point(67, 73)
+        Me.btnValidatetaxi.Name = "btnValidatetaxi"
+        Me.btnValidatetaxi.Size = New System.Drawing.Size(56, 23)
+        Me.btnValidatetaxi.TabIndex = 6
+        Me.btnValidatetaxi.Text = "Validate"
+        Me.btnValidatetaxi.UseVisualStyleBackColor = True
+        '
         'btnUpdateTaxi
         '
         Me.btnUpdateTaxi.Location = New System.Drawing.Point(10, 73)
@@ -610,15 +620,6 @@ Partial Class Form3
         Me.StatusStrip1.TabIndex = 5
         Me.StatusStrip1.Text = "StatusStrip1"
         '
-        'btnValidatetaxi
-        '
-        Me.btnValidatetaxi.Location = New System.Drawing.Point(67, 73)
-        Me.btnValidatetaxi.Name = "btnValidatetaxi"
-        Me.btnValidatetaxi.Size = New System.Drawing.Size(56, 23)
-        Me.btnValidatetaxi.TabIndex = 6
-        Me.btnValidatetaxi.Text = "Validate"
-        Me.btnValidatetaxi.UseVisualStyleBackColor = True
-        '
         'Form3
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -628,6 +629,7 @@ Partial Class Form3
         Me.Controls.Add(Me.Group2)
         Me.Controls.Add(Me.Group1)
         Me.Controls.Add(Me.GroupVerbose)
+        Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.Name = "Form3"
         Me.Text = "Form3"
         Me.GroupVerbose.ResumeLayout(False)

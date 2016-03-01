@@ -157,7 +157,7 @@
         DataGridView1.EditMode = DataGridViewEditMode.EditProgrammatically
         DataGridView1.AllowUserToAddRows = False
 
-        Dim minToTray As New clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
+        Dim minToTray As New emu_common.clsMinToTray(Me, APPLICATION_NAME & " is running...", Me.Icon)
 
         GetIPAddress()
         _server = New Server(Convert.ToInt64(SERVER_PORT))
@@ -193,7 +193,7 @@
 
     End Sub
 
-    Private Sub _server_ClientEvent(ByVal client As Client) Handles _server.ClientEvent
+    Private Sub _server_ClientEvent(ByVal client As emu_common.Client) Handles _server.ClientEvent
         updateDT(client)
         UpdateDataGrid(ClientGroup)
     End Sub
@@ -265,7 +265,7 @@
         txtPort.Text = SERVER_PORT
     End Sub
 
-    Private Function updateDT(ByVal Client As Client) As IncomingStatus
+    Private Function updateDT(ByVal Client As emu_common.Client) As IncomingStatus
         Dim row() As DataRow = ClientGroup.Select("TrackerID='" & Client.TrackerID & "'")
         If row.Count > 0 Then
             row(0)("IPAddress") = Client.IPAddress

@@ -22,6 +22,7 @@ Partial Class Form3
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(Form3))
         Me.GroupVerbose = New System.Windows.Forms.GroupBox
         Me.ListBox1 = New System.Windows.Forms.ListBox
         Me.Group1 = New System.Windows.Forms.GroupBox
@@ -351,6 +352,7 @@ Partial Class Form3
         Me.Controls.Add(Me.Group2)
         Me.Controls.Add(Me.Group1)
         Me.Controls.Add(Me.GroupVerbose)
+        Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.Name = "Form3"
         Me.Text = "Form3"
         Me.GroupVerbose.ResumeLayout(False)

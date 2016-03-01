@@ -347,13 +347,13 @@
                                             Case &H0
                                                 RaiseEvent OnEvent("NAcknowledge", Common.TRX.RECEIVE)
                                                 RaiseEvent OnResponse(ENTITY_OBU & "NACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
-                                                REPLY_TYPE = Common.ReplyType.Acknowledge
-                                                _replyTimer.Start()
+                                                'REPLY_TYPE = Common.ReplyType.Acknowledge
+                                                '_replyTimer.Start()
                                             Case &H1
                                                 RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
                                                 RaiseEvent OnResponse(ENTITY_OBU & "ACK " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.ERRORS)
-                                                REPLY_TYPE = Common.ReplyType.Acknowledge
-                                                _replyTimer.Start()
+                                                'REPLY_TYPE = Common.ReplyType.Acknowledge
+                                                '_replyTimer.Start()
                                         End Select
                                     End If
                                 Case COMMAND_END_ADHOC

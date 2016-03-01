@@ -69,7 +69,6 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="class\clsMinToTray.vb" />
     <Compile Include="class\Common.vb">
       <SubType>Code</SubType>
     </Compile>
@@ -123,7 +122,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Aroche-Delta-Games.ico" />
     <Content Include="Multivitamin-Multiminimal-Cmd.ico" />
   </ItemGroup>
   <ItemGroup>
