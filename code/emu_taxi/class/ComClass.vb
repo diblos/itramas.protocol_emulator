@@ -376,44 +376,56 @@
 
                 Select Case _devicemode
                     Case Common.Device.TaxiMeter
-                        If arrByte(0) = &H6 Then
+                        If arrByte.Length = 1 And arrByte(0) = &H6 Then
                             RaiseEvent OnResponse(ENTITY_CT & "Acknowledge " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                             RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
                             Array.Resize(buffer, 0)
                         Else
-                            '2A646E05050102
+                            '2A646E0105FE00
                             Dim Send_Report As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H1, &H2} 'HARDCODED
-                            If AreArraysEqual(arrByte, Send_Report) Then
+
+                            '2A646E05050102
+                            Dim Get_Meter_Info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H1, &H2} 'HARDCODED
+                            If AreArraysEqual(arrByte, Get_Meter_Info) Then
                                 RaiseEvent OnResponse(ENTITY_OBU & "Send Report " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                                 RaiseEvent OnEvent("SEND REPORT", Common.TRX.RECEIVE)
                             Else
-                                '02 03 16 36 30
-                                If arrByte(0) = STX And (arrByte(3) = &H36 And arrByte(4) = &H30) Then
-                                    RaiseEvent OnResponse(ENTITY_CT & "Sale Approval " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
-                                    RaiseEvent OnEvent("SALE APPROVAL", Common.TRX.RECEIVE)
-                                Else
+                                Try
+                                    '02 03 16 36 30
+                                    If arrByte(0) = STX And (arrByte(3) = &H36 And arrByte(4) = &H30) Then
+                                        RaiseEvent OnResponse(ENTITY_CT & "Sale Approval " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                        RaiseEvent OnEvent("SALE APPROVAL", Common.TRX.RECEIVE)
+                                    Else
+                                        Throw New Exception("Unknown Message")
+                                    End If
+                                Catch ex As Exception
                                     RaiseEvent OnResponse(ENTITY_CT & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                                     RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                End If
+                                    Array.Resize(buffer, 0)
+                                End Try
                             End If
                         End If
 
                     Case Common.Device.CashlessTerminal
-                        If arrByte(0) = &H6 Then
+                        If arrByte.Length = 1 And arrByte(0) = &H6 Then
                             RaiseEvent OnResponse(ENTITY_TM & "Acknowledge " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                             RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
                             Array.Resize(buffer, 0)
                         Else
-                            '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
-                            Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
-                            If AreArraysEqual(arrByte, Sale_Transaction) Then
-                                RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
-                                RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
-                            Else
+                            Try
+                                '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
+                                Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
+                                If AreArraysEqual(arrByte, Sale_Transaction) Then
+                                    RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
+                                    RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
+                                Else
+                                    Throw New Exception("Unknown Message")
+                                End If
+                            Catch ex As Exception
                                 RaiseEvent OnResponse(ENTITY_TM & "Unknown " & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.LOG)
                                 RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                            End If
-
+                                Array.Resize(buffer, 0)
+                            End Try
                         End If
 
                 End Select
