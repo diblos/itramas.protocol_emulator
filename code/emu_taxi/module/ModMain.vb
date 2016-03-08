@@ -19,10 +19,12 @@
     Public dec1F As Integer = Convert.ToInt32("0x1F", 16)
     Public dec3F As Integer = Convert.ToInt32("0x3F", 16)
 
-    
-    Public STX As Short = &H2
-    Public EOT As Short = &H3
-    Public SEPARATOR As Short = &H1C
+    Public STX As Byte = &H2
+    Public ETX As Byte = &H3
+    Public ACK As Byte = &H6
+    Public SEP As Byte = &H1C
+
+    Public EOT As Short = &HA3
 
     'ROOF TOP SIGNAGE COMMANDS
     Public COMMAND_ACK As Short = &H90
@@ -59,6 +61,8 @@
     Public RSC_DATA As New emu_common.RooftopSignatureControl
 
     Public OBU_IP As String = "127.0.0.1"
+
+    Public Const DATA_DELIMITER As String = "|"
 
     Public Sub Initialization()
         APPLICATION_NAME = IIf(Configuration.ConfigurationManager.AppSettings("APPNAME") = "", "", Configuration.ConfigurationManager.AppSettings("APPNAME"))

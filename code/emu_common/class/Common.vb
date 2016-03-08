@@ -22,6 +22,7 @@ Public Class Common
         TIMEOUT
         DTO
         LOG
+        [STRING]
         ERRORS
     End Enum
 

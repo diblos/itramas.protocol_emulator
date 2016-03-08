@@ -386,7 +386,7 @@
                     Select Case EMUMODE
                         Case EmulatorMode.TaxiMeter
                             Dim reply() As Byte = {&H2A, &H54, &H52, &H50, &H34, &H23, &H28, &H16, &H6, &H1, &H16, &H29, &H16, &H2C, &H1, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H1, &H0, &H1, &H0, &H1, &H0, &H0, &H0, &H0, &H0, &H0, &HA, &H23, &H7}
-                            nCOM.SendByte(reply, "Send Report Repsonse")
+                            nCOM.SendByte(reply, "Send Report Response")
                         Case EmulatorMode.CashlessTerminal
 
                     End Select
@@ -461,6 +461,14 @@
                     'tmpData.Rows.Add(newRow)
 
                     'newRow = Nothing
+                Case emu_common.Common.ReceiveEvents.STRING
+                    Try
+                        Split(nData, DATA_DELIMITER)
+                        lstMsgs(Split(nData, DATA_DELIMITER)(0) & " : " & Split(nData, DATA_DELIMITER)(1))
+
+                    Catch ex As Exception
+                        lstMsgs(nData)
+                    End Try
                 Case Common.ReceiveEvents.LOG
                     lstMsgs(nData)
 
