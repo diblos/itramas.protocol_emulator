@@ -1,7 +1,7 @@
 ﻿Public Class Form1
 
     Dim nTitle As String
-    Dim nSize As New Size(600, 400)
+    Dim nSize As New Size(800, 400)
     Dim cmn As New Common
     Dim CLEARLIST As Boolean = True
 
@@ -20,6 +20,8 @@
 
     Dim EMUTimer As System.Timers.Timer
     Dim EMUCOUNTER As Integer
+
+    Dim curString As String
 
 #Region "Enums"
     Private Enum connectionStat
@@ -116,7 +118,7 @@
         Me.Text = nTitle & " - " & TabControl1.SelectedTab.Text
         Me.Size = nSize
         Me.MinimumSize = nSize
-        Me.MaximumSize = nSize
+        Me.MaximumSize = nSize + New Size(nSize.Width, 0)
 
         With Me.ListBox1
             .BackColor = Color.Black
@@ -381,16 +383,98 @@
                         End Select
 
                     End If
-                Case "SEND REPORT"
-                    'If EMUTimer.Enabled Then
+
+                Case "WRITE DATETIME TO TAXIMETER"
                     Select Case EMUMODE
                         Case EmulatorMode.TaxiMeter
+                            Try
+
+                                'DECONSTRUCT STARTS
+
+                                Debug.Print(curString)
+
+                                lstMsgs("=================")
+
+                                Dim data As String() = Split(curString, " ")
+
+                                lstMsgs("W:" & data(5) & ", " & "T:" & data(8) & data(7) & data(6))
+                                lstMsgs("D:" & data(9) & ", M:" & data(10) & ", Y:" & data(12) & data(11))
+
+                                lstMsgs("=================")
+
+                                'DECONSTRUCT ENDS
+
+                                Dim reply() As Byte = System.Text.Encoding.ASCII.GetBytes("*&o")
+                                nCOM.SendByte(reply, "Write Datetime To Taximeter Response")
+                            Catch ex As Exception
+                                lstMsgs("Write Datetime To Taximeter Failed")
+                            End Try
+                        Case EmulatorMode.CashlessTerminal
+
+                    End Select
+
+                Case "GET METER INFO"
+                    Select Case EMUMODE
+                        Case EmulatorMode.TaxiMeter
+
+                            Try
+                                '00 00 00 00 00 00 00 00 00 00 00 00
+                                '00 00 77 61 74 38 39 38 39 63
+                                '33 33 33 01
+                                '00 00
+
+                                Dim DataBytes As Byte() = {&H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, _
+                                                      &H0, &H0, &H77, &H61, &H74, &H38, &H39, &H38, &H39, &H63, _
+                                                      &H33, &H33, &H33, &H1}
+                                Dim CS As Byte = cmn.GetCheckSum(DataBytes)
+
+                                ReDim Preserve DataBytes(UBound(DataBytes) + 2)
+                                DataBytes(UBound(DataBytes)) = CS
+
+                                nCOM.SendByte(DataBytes, "Send Meter Info")
+                            Catch ex As Exception
+                                lstMsgs("Error: " & ex.Message)
+                            End Try
+
+                        Case EmulatorMode.CashlessTerminal
+
+                    End Select
+                Case "SEND REPORT"
+                    Select Case EMUMODE
+                        Case EmulatorMode.TaxiMeter
+                            '2A 54 52 50 34 23 28 16 06 01 16 29 16 2C 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 01 00 01 00 00 00 00 00 00 0A 23 07
                             Dim reply() As Byte = {&H2A, &H54, &H52, &H50, &H34, &H23, &H28, &H16, &H6, &H1, &H16, &H29, &H16, &H2C, &H1, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H1, &H0, &H1, &H0, &H1, &H0, &H0, &H0, &H0, &H0, &H0, &HA, &H23, &H7}
                             nCOM.SendByte(reply, "Send Report Response")
                         Case EmulatorMode.CashlessTerminal
 
                     End Select
-                    'End If
+
+                Case "GET ACCUMULATED STATISTICS"
+                    Select Case EMUMODE
+                        Case EmulatorMode.TaxiMeter
+                            Try
+                                Dim reply() As Byte = {&H2A}
+                                nCOM.SendByte(reply, "Send Accumulated Statistics")
+                            Catch ex As Exception
+                                lstMsgs("Error: " & ex.Message)
+                            End Try
+                        Case EmulatorMode.CashlessTerminal
+
+                    End Select
+
+                Case "GET DAILY ACCUMULATED STATISTICS"
+                    Select Case EMUMODE
+                        Case EmulatorMode.TaxiMeter
+                            Try
+                                Dim reply() As Byte = {&H2A}
+                                nCOM.SendByte(reply, "Send Daily Accumulated Statistics")
+                            Catch ex As Exception
+                                lstMsgs("Error: " & ex.Message)
+                            End Try
+
+                        Case EmulatorMode.CashlessTerminal
+
+                    End Select
 
                 Case "SALE TRANSACTION"
                     Select Case EMUMODE
@@ -463,7 +547,8 @@
                     'newRow = Nothing
                 Case emu_common.Common.ReceiveEvents.STRING
                     Try
-                        Split(nData, DATA_DELIMITER)
+                        'Split(nData, DATA_DELIMITER)
+                        curString = Split(nData, DATA_DELIMITER)(1)
                         lstMsgs(Split(nData, DATA_DELIMITER)(0) & " : " & Split(nData, DATA_DELIMITER)(1))
 
                     Catch ex As Exception

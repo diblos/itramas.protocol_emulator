@@ -184,6 +184,8 @@ Public Class Form3
         'Dim data() As Byte = {&H1}
         'Dim h As Byte = cmn.GetCheckSum(data)
 
+        RadioLeft.Checked = True
+
         'EASTER
         Dim x, y, z As Byte : x = &H14 : y = &H3 : z = x Xor y
 
@@ -329,6 +331,15 @@ Public Class Form3
         txtPlate_DC.Width = (gbTaxi.Width * 0.5) - 5
 
         DataGridView1.Height = Button1.Top - 8
+
+        With GroupSide
+            .Width = TabControl2.Width - 10
+            .Left = 0
+            .Top = 0
+        End With
+
+
+
     End Sub
 
     Private Sub ListTable_SelectedIndexChanged(ByVal sender As System.Object, ByVal e As System.EventArgs)
@@ -467,21 +478,20 @@ Public Class Form3
         End Select
     End Sub
 
-    Private Sub cbSOS_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cbSOS_DC.CheckedChanged, cbSOS_RSM.CheckedChanged
+    Private Sub cbSOS_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cbSOS_RSM.CheckedChanged, cbSOS_DC.CheckedChanged, cbBD_DC.CheckedChanged
         Dim cbSOS As CheckBox = DirectCast(sender, CheckBox)
         Select Case cbSOS.Name
             Case "cbSOS_RSM"
+                Dim side As TCPClass.SOSMODE = IIf(RadioLeft.Checked, TCPClass.SOSMODE.RSM_LEFT, TCPClass.SOSMODE.RSM_RIGHT)
                 If (cbSOS.Checked) Then
-                    nTCP_2.SendSOS(True, Common.Device.RearSeatMonitor)
+                    nTCP_2.SendSOS(True, Common.Device.RearSeatMonitor, side)
                 Else
-                    nTCP_2.SendSOS(False, Common.Device.RearSeatMonitor)
+                    nTCP_2.SendSOS(False, Common.Device.RearSeatMonitor, side)
                 End If
-            Case "cbSOS_DC"
-                If (cbSOS.Checked) Then
-                    nTCP_1.SendSOS(True, Common.Device.DriverConsole)
-                Else
-                    nTCP_1.SendSOS(False, Common.Device.DriverConsole)
-                End If
+            Case "cbSOS_DC", "cbBD_DC"
+
+                nTCP_1.SendSOS_2(cbBD_DC.Checked, cbSOS_DC.Checked, emu_common.Common.Device.DriverConsole)
+
         End Select
     End Sub
 

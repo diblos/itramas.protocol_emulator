@@ -40,6 +40,13 @@ Public Class TCPClass
         End Get
     End Property
 
+    Public Enum SOSMODE
+        RSM_LEFT
+        RSM_RIGHT
+        DC_SOS
+        DC_BREAKDOWN
+    End Enum
+
     Public Sub New(ByVal dev As Common.Device)
         Select Case dev
             Case Common.Device.DriverConsole
@@ -280,19 +287,92 @@ Public Class TCPClass
         End Try
     End Sub
 
-    Public Sub SendSOS(ByVal Activate As Boolean, ByVal Device As Common.Device)
+    Public Sub SendSOS(ByVal Activate As Boolean, ByVal Device As Common.Device, ByVal nType As SOSMODE)
         Try
             If Not (Device = Common.Device.DriverConsole Or Device = Common.Device.RearSeatMonitor) Then Exit Sub
             If client.Connected Then
                 Dim command As Byte = IIf(Device = Common.Device.DriverConsole, COMMAND_SOS_DC, COMMAND_SOS_RSM)
-                Dim value As Byte = IIf(Activate, &H1, &H0)
+                Dim value As Byte
                 Dim s As New ArrayList
+                Select Case Device
+                    Case emu_common.Common.Device.DriverConsole
+                        Select Case nType
+                            Case SOSMODE.DC_SOS
+                                '0001 0000 – DS SOS active : 10
+                                '1110 1111 – DS SOS de-active : EF
+                                value = IIf(Activate, &H10, &HEF)
+                            Case SOSMODE.DC_BREAKDOWN
+                                '1000 0000 – DS break down active : 80
+                                '0111 1111 – DDS breakdown de-active : 7F
+                                value = IIf(Activate, &H80, &H7F)
+                        End Select
+
+                    Case emu_common.Common.Device.RearSeatMonitor
+                        Select Case nType
+                            Case SOSMODE.RSM_LEFT
+                                '0010 0000 : 20
+                                '1101 1111 : DF
+                                value = IIf(Activate, &H20, &HDF)
+                            Case SOSMODE.RSM_RIGHT
+                                '0100 0000 : 40
+                                '1011 1111 : BF
+                                value = IIf(Activate, &H40, &HBF)
+                        End Select
+                End Select
                 s.Add(value)
 
                 Dim msg() As Byte = {STX, command, value, cmmn.GetCheckSum(s.ToArray()), EOT}
                 Dim stream As NetworkStream = client.GetStream()
                 stream.Write(msg, 0, msg.Length)
-                RaiseEvent OnEvent("SOS " & IIf(Activate, "Activated", "Deactivated"), Common.TRX.SEND)
+                RaiseEvent OnEvent(IIf(nType = SOSMODE.RSM_LEFT, "Left", IIf(nType = SOSMODE.RSM_RIGHT, "Right", "")) & " SOS " & IIf(Activate, "Activated", "Deactivated"), Common.TRX.SEND)
+                RaiseEvent OnResponse(ENTITY_STR & "SOS  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(msg)), Common.ReceiveEvents.ERRORS)
+            End If
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
+    Public Sub SendSOS_2(ByVal valueBreak As Boolean, ByVal valueSOS As Boolean, ByVal Device As Common.Device)
+        Try
+            If Not Device = Common.Device.DriverConsole Then Exit Sub
+            If client.Connected Then
+                Dim command As Byte = IIf(Device = Common.Device.DriverConsole, COMMAND_SOS_DC, COMMAND_SOS_RSM)
+                Dim value As Byte
+                Dim s As New ArrayList
+                Select Case Device
+                    Case emu_common.Common.Device.DriverConsole
+                        '======================================== Table
+                        '0001 0000 – DS SOS active : 10
+                        '1110 1111 – DS SOS de-active : EF
+                        '1000 0000 – DS break down active : 80
+                        '0111 1111 – DS breakdown de-active : 7F
+                        '========================================
+                        Select Case UCase(valueBreak.ToString & valueSOS.ToString)
+                            Case "FALSEFALSE"
+                                '00000000
+                                value = &H0
+                            Case "TRUEFALSE"
+                                '10000000
+                                value = &H80
+                            Case "FALSETRUE"
+                                '00010000
+                                value = &H10
+                            Case "TRUETRUE"
+                                '10010000
+                                value = &H90
+                            Case Else
+                                value = &H0
+
+                        End Select
+                    Case Else
+                        value = &H0
+                End Select
+                s.Add(value)
+
+                Dim msg() As Byte = {STX, command, value, cmmn.GetCheckSum(s.ToArray()), EOT}
+                Dim stream As NetworkStream = client.GetStream()
+                stream.Write(msg, 0, msg.Length)
+                RaiseEvent OnEvent("SOS:" & IIf(valueSOS, "Activated", "Deactivated") & ", " & "BREAKDOWN:" & IIf(valueBreak, "Activated", "Deactivated"), Common.TRX.SEND)
                 RaiseEvent OnResponse(ENTITY_STR & "SOS  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(msg)), Common.ReceiveEvents.ERRORS)
             End If
         Catch ex As Exception
@@ -320,88 +400,95 @@ Public Class TCPClass
 #Region "CallBacks"
     Public Sub DataProcessing(ByVal dr As IAsyncResult)
 
-        If DataBuffer.Length > 3 Then
+        Try
 
-            Dim result As Common.Result = Checking(cmmn.TrimBytesArray(DataBuffer))
+            If DataBuffer.Length > 3 Then
 
-            If result = Common.Result.FAIL Then
-                RaiseEvent OnResponse(ENTITY_STR & "Invalid checksum  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                REPLY_TYPE = Common.ReplyType.NAcknowledge
-                _replyTimer.Start()
-            ElseIf result = Common.Result.NULL Then
-                'do nothing
-            Else
+                Dim result As Common.Result = Checking(cmmn.TrimBytesArray(DataBuffer))
 
-                Select Case DataBuffer(1)
-                    Case COMMAND_DRIVER_INFORMATION_UPDATE_REQUEST_DC
-                        RaiseEvent OnEvent("Driver Info Context Update Request", Common.TRX.RECEIVE)
-                        RaiseEvent OnResponse(ENTITY_OBU & "Driver Information  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                        'check
-                        REPLY_TYPE = Common.ReplyType.Acknowledge
-                        _replyTimer.Start()
-                        'Case COMMAND_DRV_LOGIN_DC
+                If result = Common.Result.FAIL Then
+                    RaiseEvent OnResponse(ENTITY_STR & "Invalid checksum  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                    REPLY_TYPE = Common.ReplyType.NAcknowledge
+                    _replyTimer.Start()
+                ElseIf result = Common.Result.NULL Then
+                    'do nothing
+                Else
 
-                    Case COMMAND_PROFILE_VALIDATION_REPLY_DC
-                        RaiseEvent OnEvent("Validation:", Common.TRX.RECEIVE)
-                        RaiseEvent OnResponse(ENTITY_OBU & "Taxi profile validation: " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                        'check
-                        REPLY_TYPE = Common.ReplyType.Acknowledge
-                        _replyTimer.Start()
-                    Case COMMAND_ACK
-                        Select Case DataBuffer(2)
-                            Case &H0
-                                RaiseEvent OnEvent("NAcknowledge", Common.TRX.RECEIVE)
-                                RaiseEvent OnResponse(ENTITY_OBU & "NACK  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                            Case &H1
-                                RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                                RaiseEvent OnResponse(ENTITY_OBU & "ACK  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                        End Select
-                    Case COMMAND_CONTEXT_UPDATE_REQUEST_REPLY_RSM
-                        RaiseEvent OnEvent("Context Update Reply", Common.TRX.RECEIVE)
-                        RaiseEvent OnResponse(ENTITY_OBU & "Context update reply:  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                    Select Case DataBuffer(1)
+                        Case COMMAND_DRIVER_INFORMATION_UPDATE_REQUEST_DC
+                            RaiseEvent OnEvent("Driver Info Context Update Request", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Driver Information  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                            'check
+                            REPLY_TYPE = Common.ReplyType.Acknowledge
+                            _replyTimer.Start()
+                            'Case COMMAND_DRV_LOGIN_DC
 
-                        'check
+                        Case COMMAND_PROFILE_VALIDATION_REPLY_DC
+                            RaiseEvent OnEvent("Validation:", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Taxi profile validation: " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                            'check
+                            REPLY_TYPE = Common.ReplyType.Acknowledge
+                            _replyTimer.Start()
+                        Case COMMAND_ACK
+                            Select Case DataBuffer(2)
+                                Case &H0
+                                    RaiseEvent OnEvent("NAcknowledge", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_OBU & "NACK  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                                Case &H1
+                                    RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+                                    RaiseEvent OnResponse(ENTITY_OBU & "ACK  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                            End Select
+                        Case COMMAND_CONTEXT_UPDATE_REQUEST_REPLY_RSM
+                            RaiseEvent OnEvent("Context Update Reply", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Context update reply:  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
 
-
-                        If DataBuffer(2) = &H1 Then
-                            RaiseEvent OnResponse("Downloading updated content.", Common.ReceiveEvents.ERRORS)
-                            'if exist initiate FTP download
-                            Try
-                                If Not FTP_CONTENT_FILE = "*.*" Then
-                                    cmmn.DownloadFtpFile("", FTP_CONTENT_FILE)
-                                    RaiseEvent OnResponse("FTP download: " & FTP_CONTENT_FILE & " success.", Common.ReceiveEvents.ERRORS)
-                                Else
-                                    cmmn.DownloadFtpFiles()
-                                    RaiseEvent OnResponse("FTP download success.", Common.ReceiveEvents.ERRORS)
-                                End If
-                            Catch ex As Exception
-                                RaiseEvent OnResponse("FTP download: " & ex.Message, Common.ReceiveEvents.ERRORS)
-                            End Try
-                        Else
-                            RaiseEvent OnResponse("No updates.", Common.ReceiveEvents.ERRORS)
-                        End If
+                            'check
 
 
-                        REPLY_TYPE = Common.ReplyType.Acknowledge
-                        _replyTimer.Start()
+                            If DataBuffer(2) = &H1 Then
+                                RaiseEvent OnResponse("Downloading updated content.", Common.ReceiveEvents.ERRORS)
+                                'if exist initiate FTP download
+                                Try
+                                    If Not FTP_CONTENT_FILE = "*.*" Then
+                                        cmmn.DownloadFtpFile("", FTP_CONTENT_FILE)
+                                        RaiseEvent OnResponse("FTP download: " & FTP_CONTENT_FILE & " success.", Common.ReceiveEvents.ERRORS)
+                                    Else
+                                        cmmn.DownloadFtpFiles()
+                                        RaiseEvent OnResponse("FTP download success.", Common.ReceiveEvents.ERRORS)
+                                    End If
+                                Catch ex As Exception
+                                    RaiseEvent OnResponse("FTP download: " & ex.Message, Common.ReceiveEvents.ERRORS)
+                                End Try
+                            Else
+                                RaiseEvent OnResponse("No updates.", Common.ReceiveEvents.ERRORS)
+                            End If
 
-                    Case COMMAND_DRIVER_INFORMATION_CONTEXT_UPDATE_REQUEST_RSM 'Rear
-                        RaiseEvent OnEvent("Context Update Request:", Common.TRX.RECEIVE)
-                        RaiseEvent OnResponse(ENTITY_OBU & "Rear seat monitor: " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                        'check
-                        REPLY_TYPE = Common.ReplyType.Acknowledge
-                        _replyTimer.Start()
-                    Case Else
-                        RaiseEvent OnEvent("Unknown", Common.TRX.RECEIVE)
-                        RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
-                        REPLY_TYPE = Common.ReplyType.NAcknowledge
-                        _replyTimer.Start()
-                End Select
+
+                            REPLY_TYPE = Common.ReplyType.Acknowledge
+                            _replyTimer.Start()
+
+                        Case COMMAND_DRIVER_INFORMATION_CONTEXT_UPDATE_REQUEST_RSM 'Rear
+                            RaiseEvent OnEvent("Context Update Request:", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Rear seat monitor: " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                            'check
+                            REPLY_TYPE = Common.ReplyType.Acknowledge
+                            _replyTimer.Start()
+                        Case Else
+                            RaiseEvent OnEvent("Unknown", Common.TRX.RECEIVE)
+                            RaiseEvent OnResponse(ENTITY_OBU & "Unknown " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(DataBuffer)), Common.ReceiveEvents.ERRORS)
+                            REPLY_TYPE = Common.ReplyType.NAcknowledge
+                            _replyTimer.Start()
+                    End Select
+                End If
             End If
-        End If
 
-        IQPStream.Flush()
-        StartListening()
+        Catch ex As Exception
+
+        Finally
+            IQPStream.Flush()
+            StartListening()
+        End Try
+
     End Sub
 
     Public Sub onConnectionEstablished(ByVal dr As IAsyncResult)
