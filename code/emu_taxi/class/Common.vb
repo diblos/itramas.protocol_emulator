@@ -96,7 +96,7 @@ Public Class Common
 
     Public Function ShowVersion() As String
         Dim s() As String = Application.ProductVersion.Split(".")
-        Return s(0) & "." & s(1) & s(2)
+        Return s(0) & "." & s(1) & s(2) & s(3)
     End Function
 
 End Class

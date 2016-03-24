@@ -139,28 +139,30 @@
 
         AddHandler ListBox1.DoubleClick, AddressOf ListBox1_DoubleClick
 
+        AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf UnhandledExceptionEventRaised
+
         UpdateStatus("Ready")
     End Sub
 
     Private Sub SetComboValues()
 
-        SetCOM(ComboCOM)
-        SetCOM(ComboCOM2)
+        SetCOM(ComboCOM, 4)
+        SetCOM(ComboCOM2, 4)
         SetBaudRate(ComboBaud)
         SetBaudRate(ComboBaud2)
 
     End Sub
 
-    Private Sub SetCOM(ByRef cb As ComboBox)
+    Private Sub SetCOM(ByRef cb As ComboBox, Optional ByVal SelectedIndex As Integer = 2)
         With cb
             For i = 1 To 10
                 .Items.Add("COM" & i)
             Next
-            .SelectedIndex = 2
+            .SelectedIndex = SelectedIndex
         End With
     End Sub
 
-    Private Sub SetBaudRate(ByRef cb As ComboBox)
+    Private Sub SetBaudRate(ByRef cb As ComboBox, Optional ByVal SelectedIndex As Integer = 4)
         With cb
             .Items.Add("600")
             .Items.Add("1200")
@@ -173,7 +175,7 @@
             .Items.Add("56000")
             .Items.Add("57600")
             .Items.Add("115200")
-            .SelectedIndex = 4
+            .SelectedIndex = SelectedIndex
         End With
     End Sub
 
@@ -314,6 +316,7 @@
                     '02031636303030303030303030313132303030301C30320040415050524F56414C20202020202058585858585820202020202020202020202020202020202020201C4430006054455354205445524D494E414C202020202020204C494E45203120202020202020202020202020204C494E45203220202020202020202020202020201C303300063136303132371C303400063132333635321C303100065858585858581C363500063939343033351C3136000831303031303030311C443100153939393939303030303031323334351C44320010564953412020202020201C333000162A2A2A2A2A2A2A2A2A2A2A2A393531321C33310004313930361C353000063030303030311C443300120000000000000000000000001C4434000230341C4435002654414E20575549204B49415420202020202020202020202000001C0309
                     Dim approval_data As Byte() = _
                     {&H2, &H3, &H16, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H31, &H32, &H30, &H30, &H30, &H30, &H1C, &H30, &H32, &H0, &H40, &H41, &H50, &H50, &H52, &H4F, &H56, &H41, &H4C, &H20, &H20, &H20, &H20, &H20, &H20, &H58, &H58, &H58, &H58, &H58, &H58, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H1C, &H44, &H30, &H0, &H60, &H54, &H45, &H53, &H54, &H20, &H54, &H45, &H52, &H4D, &H49, &H4E, &H41, &H4C, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H4C, &H49, &H4E, &H45, &H20, &H31, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H4C, &H49, &H4E, &H45, &H20, &H32, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H1C, &H30, &H33, &H0, &H6, &H31, &H36, &H30, &H31, &H32, &H37, &H1C, &H30, &H34, &H0, &H6, &H31, &H32, &H33, &H36, &H35, &H32, &H1C, &H30, &H31, &H0, &H6, &H58, &H58, &H58, &H58, &H58, &H58, &H1C, &H36, &H35, &H0, &H6, &H39, &H39, &H34, &H30, &H33, &H35, &H1C, &H31, &H36, &H0, &H8, &H31, &H30, &H30, &H31, &H30, &H30, &H30, &H31, &H1C, &H44, &H31, &H0, &H15, &H39, &H39, &H39, &H39, &H39, &H30, &H30, &H30, &H30, &H30, &H31, &H32, &H33, &H34, &H35, &H1C, &H44, &H32, &H0, &H10, &H56, &H49, &H53, &H41, &H20, &H20, &H20, &H20, &H20, &H20, &H1C, &H33, &H30, &H0, &H16, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H2A, &H39, &H35, &H31, &H32, &H1C, &H33, &H31, &H0, &H4, &H31, &H39, &H30, &H36, &H1C, &H35, &H30, &H0, &H6, &H30, &H30, &H30, &H30, &H30, &H31, &H1C, &H44, &H33, &H0, &H12, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H1C, &H44, &H34, &H0, &H2, &H30, &H34, &H1C, &H44, &H35, &H0, &H26, &H54, &H41, &H4E, &H20, &H57, &H55, &H49, &H20, &H4B, &H49, &H41, &H54, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H20, &H0, &H0, &H1C, &H3, &H9}
+                    Debug.Print(approval_data.Length)
                     nCOM.SendByte(approval_data, "Sale approval")
                     EMUCOUNTER = EMUCOUNTER + 1
                     EMUTimer.Interval = 2000
@@ -423,9 +426,10 @@
                                 '33 33 33 01
                                 '00 00
 
-                                Dim DataBytes As Byte() = {&H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, _
-                                                      &H0, &H0, &H77, &H61, &H74, &H38, &H39, &H38, &H39, &H63, _
-                                                      &H33, &H33, &H33, &H1}
+                                Dim DataBytes As Byte() = _
+                                                        {&H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, &H0, _
+                                                        &H0, &H0, &H77, &H61, &H74, &H38, &H39, &H38, &H39, &H63, _
+                                                        &H33, &H33, &H33, &H1}
                                 Dim CS As Byte = cmn.GetCheckSum(DataBytes)
 
                                 ReDim Preserve DataBytes(UBound(DataBytes) + 2)
@@ -453,8 +457,30 @@
                     Select Case EMUMODE
                         Case EmulatorMode.TaxiMeter
                             Try
-                                Dim reply() As Byte = {&H2A}
-                                nCOM.SendByte(reply, "Send Accumulated Statistics")
+                                Dim DataBytes() As Byte = _
+                                { _
+                                &H0, &H0, &H64, _
+                                &H0, &H0, &H46, _
+                                &H0, &H0, &H14, _
+                                &H0, &H0, &H5A, _
+                                &H0, &H0, &HF, _
+                                &H0, &H0, &H5, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H3, &H1, &H3, &H16, _
+                                &H37, &H3, &H1, &H3, &H16 _
+                                }
+
+                                Dim CS As Byte = cmn.GetCheckSum(DataBytes)
+
+                                ReDim Preserve DataBytes(UBound(DataBytes) + 2)
+                                DataBytes(UBound(DataBytes)) = CS
+
+                                nCOM.SendByte(DataBytes, "Send Accumulated Statistics")
                             Catch ex As Exception
                                 lstMsgs("Error: " & ex.Message)
                             End Try
@@ -466,8 +492,31 @@
                     Select Case EMUMODE
                         Case EmulatorMode.TaxiMeter
                             Try
-                                Dim reply() As Byte = {&H2A}
-                                nCOM.SendByte(reply, "Send Daily Accumulated Statistics")
+                                Dim DataBytes() As Byte = _
+                                { _
+                                &H0, &H0, &H64, _
+                                &H0, &H0, &H46, _
+                                &H0, &H0, &H14, _
+                                &H0, &H0, &H5A, _
+                                &H0, &H0, &HF, _
+                                &H0, &H0, &H5, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &HA, _
+                                &H0, &H0, &H1, &H3, &H16, _
+                                &H3B, &H17, &H1, &H3, &H16, _
+                                &H0, &H0 _
+                                }
+
+                                Dim CS As Byte = cmn.GetCheckSum(DataBytes)
+
+                                ReDim Preserve DataBytes(UBound(DataBytes) + 2)
+                                DataBytes(UBound(DataBytes)) = CS
+
+                                nCOM.SendByte(DataBytes, "Send Daily Accumulated Statistics")
                             Catch ex As Exception
                                 lstMsgs("Error: " & ex.Message)
                             End Try
@@ -568,6 +617,15 @@
         Dim list As ListBox = DirectCast(sender, ListBox)
         If list.Items.Count <= 0 Then Exit Sub
         If list.SelectedItem <> "" Then MsgBox(list.SelectedItem)
+    End Sub
+
+    Private Sub UnhandledExceptionEventRaised(ByVal sender As Object, ByVal e As UnhandledExceptionEventArgs)
+        If e.IsTerminating Then
+            Dim o As Object = e.ExceptionObject
+            Dim appLog As New System.Diagnostics.EventLog()
+            appLog.Source = "Itramas - Protocol Emulator [Taxi Meter & Cashless Console]"
+            appLog.WriteEntry("")
+        End If
     End Sub
 
 End Class
