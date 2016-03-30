@@ -435,7 +435,7 @@
 
     Private Function Checking(ByVal arrByte() As Byte) As Common.Result
         Try
-            Dim nSize As Integer = ConvertHexToDec(ConvertDecToHex(arrByte(2)))
+            Dim nSize As Integer = comn.ConvertHexToDec(comn.ConvertDecToHex(arrByte(2)))
             Dim newarr(nSize - 1) As Byte
             Dim nCS As Byte = arrByte(2 + nSize + 1)
 
@@ -453,61 +453,6 @@
         Catch ex As Exception
             Debug.Print("CS ERROR")
             Return Common.Result.FAIL
-        End Try
-    End Function
-
-    Private Function ConvertDecToHex(ByVal decData As Integer) As String
-        Dim tmpHex As String = Hex(decData)
-        Try
-            Return IIf(tmpHex.Length = 1, "0" & tmpHex, tmpHex)
-        Catch ex As Exception
-            Return Nothing
-        End Try
-    End Function
-
-    Private Function ConvertHexToBinary(ByVal hexData As String) As Integer
-        Dim decData As Integer = Nothing
-
-        Try
-            decData = ConvertHexToDec(hexData)
-            Return Convert.ToString(decData, 2)
-        Catch ex As Exception
-            Return 0
-        End Try
-    End Function
-
-    Private Function ConvertHexToDec(ByVal hexData As String) As Integer
-        Try
-            Return Convert.ToInt32(hexData, 16)
-        Catch ex As Exception
-            Return 0
-        End Try
-    End Function
-
-    Private Function ConvertHexToASC(ByVal hexData As String) As String
-        Try
-            ConvertHexToASC = Convert.ToChar(System.Convert.ToUInt32(hexData, 16)).ToString
-        Catch ex As Exception
-            Return Nothing
-        End Try
-    End Function
-
-    Private Function ConvertHexToSingle(ByVal hexValue As String) As Single
-        Dim iInputIndex As Integer = 0
-        Dim iOutputIndex As Integer = 0
-        Dim bArray(3) As Byte
-
-        Try
-            For iInputIndex = 0 To hexValue.Length - 1 Step 2
-                bArray(iOutputIndex) = Byte.Parse(hexValue.Chars(iInputIndex) & hexValue.Chars(iInputIndex + 1), Globalization.NumberStyles.HexNumber)
-                iOutputIndex += 1
-            Next
-
-            Array.Reverse(bArray)
-
-            Return BitConverter.ToSingle(bArray, 0)
-        Catch ex As Exception
-            Return 0
         End Try
     End Function
 

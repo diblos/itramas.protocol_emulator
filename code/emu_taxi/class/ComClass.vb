@@ -1,4 +1,7 @@
-﻿Public Class ComClass
+﻿Imports System.Globalization
+Imports System.Threading
+
+Public Class ComClass
     Dim COM As System.IO.Ports.SerialPort
 
     Private _connection As ConnectionStatus
@@ -22,6 +25,9 @@
     Private _devicemode As Common.Device = Common.Device.TaxiMeter
 
     Private CONTROL_FLAG As Boolean = False
+
+    Dim curCulture As CultureInfo = Thread.CurrentThread.CurrentCulture
+    Dim tInfo As TextInfo = curCulture.TextInfo()
 
 #Region "ENUM"
     Private Enum ConnectionStatus
@@ -341,10 +347,27 @@
 
     Private Sub ControlHandler(ByVal sender As Object, ByVal e As System.Timers.ElapsedEventArgs)
         CONTROL_FLAG = False
+        OBUDataProcess(buffer)
         _control.Stop()
     End Sub
 
     Private Sub DataReceivedHandler(ByVal sender As Object, ByVal e As System.IO.Ports.SerialDataReceivedEventArgs)
+        Select Case _devicemode
+            Case emu_common.Common.Device.TaxiMeter, emu_common.Common.Device.CashlessTerminal
+
+                ProcessDataReceived_DEV(sender, e)
+
+            Case emu_common.Common.Device.OBU
+
+                ProcessDataReceived_OBU(sender, e)
+
+        End Select
+
+        Exit Sub
+
+    End Sub
+
+    Private Sub ProcessDataReceived_DEV(ByVal sender As Object, ByVal e As System.IO.Ports.SerialDataReceivedEventArgs)
 
         Dim intLenData As Integer
         Dim arrByte() As Byte
@@ -407,7 +430,7 @@
             arrLastReceived = arrByte
             buffer = Nothing 'Clear the inData after reassign array
 
-           If UBound(arrByte) > 3 Then
+            If UBound(arrByte) > 3 Then
 
                 refine(arrByte, intLenData)
 
@@ -431,8 +454,8 @@
                                 '2A646E0105FE00
                                 Dim Send_Report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
 
-                                '2A646E05050102
-                                Dim Get_Meter_Info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H1, &H2} 'HARDCODED
+                                '2A646E05050201
+                                Dim Get_Meter_Info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
 
                                 '2A646E0305FC00
                                 Dim Get_Accumulated_Statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
@@ -540,8 +563,8 @@
                         '2A646E0105FE00
                         Dim send_report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
 
-                        '2A646E05050102
-                        Dim get_meter_info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H1, &H2} 'HARDCODED
+                        '2A646E05050201
+                        Dim get_meter_info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
 
                         '2A646E0305FC00
                         Dim get_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
@@ -589,6 +612,182 @@
 
         If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte))
 
+    End Sub
+
+    Private Sub ProcessDataReceived_OBU(ByVal sender As Object, ByVal e As System.IO.Ports.SerialDataReceivedEventArgs)
+
+        Dim intLenData As Integer
+        Dim arrByte() As Byte
+        Dim tempBuffer() As Byte
+        Dim intI As Integer
+        Dim intJ As Integer
+        Dim intOffset As Integer
+        Dim arrDeValueLen(1) As Byte
+        Dim blnETX As Boolean
+        Dim blnChkInput As Boolean
+        Dim sp As System.IO.Ports.SerialPort = CType(sender, System.IO.Ports.SerialPort)
+        Dim intBytesToRead As Integer = sp.BytesToRead
+        Dim inData(intBytesToRead - 1) As Byte
+
+        blnETX = False
+        blnChkInput = False
+
+        If intBytesToRead > 0 Then
+            sp.Read(inData, 0, intBytesToRead)
+            If Not IsNothing(buffer) Then
+                intOffset = buffer.Length
+                ReDim tempBuffer(buffer.Length - 1)
+                buffer.CopyTo(tempBuffer, 0)
+                ReDim buffer(buffer.Length + inData.Length - 1)
+                tempBuffer.CopyTo(buffer, 0)
+                inData.CopyTo(buffer, intOffset)
+            Else
+                ReDim buffer(inData.Length - 1)
+                buffer = inData
+            End If
+        End If
+
+        If Not IsNothing(buffer) Then
+            If CONTROL_FLAG = False Then
+                CONTROL_FLAG = True
+                _control.Start()
+            End If
+
+            ReDim arrLastReceived(UBound(buffer))
+            arrLastReceived = buffer
+            blnChkInput = True
+            intLenData = buffer.Length
+            ReDim arrByte(intLenData - 1)
+            arrByte = buffer
+
+            Try
+                If arrByte(intLenData - 1) = ETX Then
+                    '*************************************
+                    'The data received is verified for the complete pacakge
+                    '*************************************
+                    If intLenData > 0 And intLenData < 17521 Then '17521 for TYPEA PID 39421 for TYPEB and TYPEC refer to PIS Protocol document to derive
+                        blnETX = True
+                    Else
+                        buffer = Nothing
+                    End If
+                End If
+            Catch ex As Exception
+                blnETX = False
+            End Try
+        End If
+
+        '===============================================================
+
+
+
+        '===============================================================
+        'If blnChkInput And blnETX Then
+        '    blnETX = False
+        '    ReDim arrLastReceived(UBound(arrByte))
+        '    arrLastReceived = arrByte
+        '    buffer = Nothing 'Clear the inData after reassign array
+
+        '    If UBound(arrByte) > 3 Then
+
+        '        refine(arrByte, intLenData)
+
+        '        'Debug.Print(arrByte.Length)
+        '        'Debug.Print(comn.ByteArrayToString(arrByte))
+
+        '        'Package verification
+        '        If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
+
+        '            If arrByte.Length = 1 And arrByte(0) = &H6 Then
+        '                RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+        '                Array.Resize(buffer, 0)
+        '            Else
+
+
+
+
+        '            End If
+
+        '        End If
+        '    Else
+        '        intI = UBound(arrByte)
+        '        intJ = intI
+        '    End If
+        'Else
+        '    If IsNothing(arrByte) Then Exit Sub
+        '    If arrByte.Length = 0 Then Exit Sub
+        '    If arrByte.Length = 1 And arrByte(UBound(arrByte)) = &H6 Then
+        '        RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '        RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+        '        Array.Resize(buffer, 0)
+        '    Else
+
+        '        Try
+        '            '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
+        '            Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
+        '            'If AreArraysEqual(arrByte, Sale_Transaction) Then
+        '            If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
+        '                'If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+
+        '                'If IsApproval(arrByte) Then Throw New Exception("Not Sale Transaction")
+
+        '                RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
+
+        '                Breakdowns(arrByte)
+        '                'Array.Resize(buffer, 0)
+        '            ElseIf arrByte(0) <> STX Then
+        '                'Throw New Exception("Unknown Message")
+        '            End If
+        '        Catch ex As Exception
+        '            RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '            RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+        '            'If Not CONTROL_FLAG Then Array.Resize(buffer, 0)
+        '        End Try
+
+        '    End If
+        'End If
+
+        If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte) & " | " & CONTROL_FLAG)
+
+    End Sub
+
+    Private Sub OBUDataProcess(ByVal data() As Byte)
+        Dim str As String = String.Empty
+        If Not IsNothing(data) Then
+            Debug.Print(data.Length)
+            Select Case data.Length
+                Case 25 To 30 'GET METER INFO
+                    str = "get meter info"
+                    RaiseEvent OnResponse(ENTITY_TM & tInfo.ToTitleCase(str) & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnEvent(tInfo.ToUpper(str), Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+
+                Case 53 To 55 'SEND REPORT
+                    str = "send report"
+                    RaiseEvent OnResponse(ENTITY_TM & tInfo.ToTitleCase(str) & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnEvent(tInfo.ToUpper(str), Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+
+                Case 45 To 49 'ACCU STATS
+                    str = "get accumulated statistics"
+                    RaiseEvent OnResponse(ENTITY_TM & tInfo.ToTitleCase(str) & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnEvent(tInfo.ToUpper(str), Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+
+                Case 50 To 52 'DAILY ACCU STATS
+                    str = "get daily accumulated statistics"
+                    RaiseEvent OnResponse(ENTITY_TM & tInfo.ToTitleCase(str) & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnEvent(tInfo.ToUpper(str), Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+
+                Case Else
+                    RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+
+            End Select
+        End If
     End Sub
 
     Private Sub refine(ByRef refBytes As Byte(), ByRef len As Integer)
@@ -1058,37 +1257,37 @@
                     For Each item As Byte In arrByte
                         Select Case encounter
                             Case 1
-                                tmpStr_1 = tmpStr_1 & ConvertDecToHex(item)
+                                tmpStr_1 = tmpStr_1 & comn.ConvertDecToHex(item)
                             Case 2
-                                tmpStr_2 = tmpStr_2 & ConvertDecToHex(item)
+                                tmpStr_2 = tmpStr_2 & comn.ConvertDecToHex(item)
                             Case 3
-                                tmpStr_3 = tmpStr_3 & ConvertDecToHex(item)
+                                tmpStr_3 = tmpStr_3 & comn.ConvertDecToHex(item)
                             Case 4
-                                tmpStr_4 = tmpStr_4 & ConvertDecToHex(item)
+                                tmpStr_4 = tmpStr_4 & comn.ConvertDecToHex(item)
                             Case 5
-                                tmpStr_5 = tmpStr_5 & ConvertDecToHex(item)
+                                tmpStr_5 = tmpStr_5 & comn.ConvertDecToHex(item)
                             Case 6
-                                tmpStr_6 = tmpStr_6 & ConvertDecToHex(item)
+                                tmpStr_6 = tmpStr_6 & comn.ConvertDecToHex(item)
                             Case 7
-                                tmpStr_7 = tmpStr_7 & ConvertDecToHex(item)
+                                tmpStr_7 = tmpStr_7 & comn.ConvertDecToHex(item)
                             Case 8
-                                tmpStr_8 = tmpStr_8 & ConvertDecToHex(item)
+                                tmpStr_8 = tmpStr_8 & comn.ConvertDecToHex(item)
                             Case 9
-                                tmpStr_9 = tmpStr_9 & ConvertDecToHex(item)
+                                tmpStr_9 = tmpStr_9 & comn.ConvertDecToHex(item)
                             Case 10
-                                tmpStr_10 = tmpStr_10 & ConvertDecToHex(item)
+                                tmpStr_10 = tmpStr_10 & comn.ConvertDecToHex(item)
                             Case 11
-                                tmpStr_11 = tmpStr_11 & ConvertDecToHex(item)
+                                tmpStr_11 = tmpStr_11 & comn.ConvertDecToHex(item)
                             Case 12
-                                tmpStr_12 = tmpStr_12 & ConvertDecToHex(item)
+                                tmpStr_12 = tmpStr_12 & comn.ConvertDecToHex(item)
                             Case 13
-                                tmpStr_13 = tmpStr_13 & ConvertDecToHex(item)
+                                tmpStr_13 = tmpStr_13 & comn.ConvertDecToHex(item)
                             Case 14
-                                tmpStr_14 = tmpStr_14 & ConvertDecToHex(item)
+                                tmpStr_14 = tmpStr_14 & comn.ConvertDecToHex(item)
                             Case 15
-                                tmpStr_15 = tmpStr_15 & ConvertDecToHex(item)
+                                tmpStr_15 = tmpStr_15 & comn.ConvertDecToHex(item)
                             Case 16
-                                tmpStr_16 = tmpStr_16 & ConvertDecToHex(item)
+                                tmpStr_16 = tmpStr_16 & comn.ConvertDecToHex(item)
 
                         End Select
                         If item = SEP Then
@@ -1104,7 +1303,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_1.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_1.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_1.Substring(8, tmpStr_1.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_1.Substring(8, tmpStr_1.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_1.Substring(8, tmpStr_1.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 2 Then
@@ -1114,7 +1313,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_2.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_2.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_2.Substring(8, tmpStr_2.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_2.Substring(8, tmpStr_2.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_2.Substring(8, tmpStr_2.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 3 Then
@@ -1124,7 +1323,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_3.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_3.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_3.Substring(8, tmpStr_3.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_3.Substring(8, tmpStr_3.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_3.Substring(8, tmpStr_3.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     '==============================================================================
@@ -1135,7 +1334,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_4.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_4.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_4.Substring(8, tmpStr_4.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_4.Substring(8, tmpStr_4.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_4.Substring(8, tmpStr_4.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 5 Then
@@ -1145,7 +1344,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_5.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_5.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_5.Substring(8, tmpStr_5.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_5.Substring(8, tmpStr_5.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_5.Substring(8, tmpStr_5.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 6 Then
@@ -1155,7 +1354,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_6.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_6.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_6.Substring(8, tmpStr_6.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_6.Substring(8, tmpStr_6.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_6.Substring(8, tmpStr_6.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 7 Then
@@ -1165,7 +1364,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_7.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_7.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_7.Substring(8, tmpStr_7.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_7.Substring(8, tmpStr_7.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_7.Substring(8, tmpStr_7.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 8 Then
@@ -1175,7 +1374,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_8.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_8.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_8.Substring(8, tmpStr_8.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_8.Substring(8, tmpStr_8.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_8.Substring(8, tmpStr_8.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 9 Then
@@ -1185,7 +1384,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_9.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_9.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_9.Substring(8, tmpStr_9.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_9.Substring(8, tmpStr_9.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_9.Substring(8, tmpStr_9.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 10 Then
@@ -1195,7 +1394,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_10.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_10.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_10.Substring(8, tmpStr_10.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_10.Substring(8, tmpStr_10.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_10.Substring(8, tmpStr_10.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 11 Then
@@ -1205,7 +1404,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_11.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_11.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_11.Substring(8, tmpStr_11.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_11.Substring(8, tmpStr_11.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_11.Substring(8, tmpStr_11.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 12 Then
@@ -1215,7 +1414,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_12.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_12.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_12.Substring(8, tmpStr_12.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_12.Substring(8, tmpStr_12.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_12.Substring(8, tmpStr_12.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 13 Then
@@ -1225,7 +1424,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_13.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_13.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_13.Substring(8, tmpStr_13.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_13.Substring(8, tmpStr_13.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_13.Substring(8, tmpStr_13.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 14 Then
@@ -1235,7 +1434,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_14.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_14.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_14.Substring(8, tmpStr_14.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_14.Substring(8, tmpStr_14.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_14.Substring(8, tmpStr_14.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     If encounter >= 15 Then
@@ -1245,7 +1444,7 @@
                         RaiseEvent OnResponse("  Field Type - " & tmpStr_15.Substring(0, 4), Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Length - " & tmpStr_15.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                         RaiseEvent OnResponse("  Field Data - " & tmpStr_15.Substring(8, tmpStr_15.Length - 8) & _
-                                              " [" & hex2ascii(tmpStr_15.Substring(8, tmpStr_15.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                                              " [" & comn.hex2ascii(tmpStr_15.Substring(8, tmpStr_15.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     End If
 
                     'If encounter >= 16 Then
@@ -1255,7 +1454,7 @@
                     '    RaiseEvent OnResponse("  Field Type - " & tmpStr_16.Substring(0, 4), Common.ReceiveEvents.LOG)
                     '    RaiseEvent OnResponse("  Field Length - " & tmpStr_16.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
                     '    RaiseEvent OnResponse("  Field Data - " & tmpStr_16.Substring(8, tmpStr_16.Length - 8) & _
-                    '                          " [" & hex2ascii(tmpStr_16.Substring(8, tmpStr_16.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                    '                          " [" & comn.hex2ascii(tmpStr_16.Substring(8, tmpStr_16.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
                     'End If
                     '==============================================================================
 
@@ -1304,7 +1503,7 @@
                     Dim counter As Integer = 0
                     tmpStr = String.Empty
                     For Each item As Byte In arrByte
-                        If encounter = 1 Then tmpStr = tmpStr & ConvertDecToHex(item)
+                        If encounter = 1 Then tmpStr = tmpStr & comn.ConvertDecToHex(item)
                         If item = SEP Then
                             encounter = encounter + 1
                         End If
@@ -1313,7 +1512,7 @@
                     tmpStr = tmpStr.Remove(tmpStr.Length - 2, 2)
                     RaiseEvent OnResponse("Field Type - " & tmpStr.Substring(0, 4), Common.ReceiveEvents.LOG)
                     RaiseEvent OnResponse("Field Length - " & tmpStr.Substring(4, 4), emu_common.Common.ReceiveEvents.LOG)
-                    RaiseEvent OnResponse("Field Data - " & tmpStr.Substring(8, tmpStr.Length - 8) & " [" & hex2ascii(tmpStr.Substring(8, tmpStr.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
+                    RaiseEvent OnResponse("Field Data - " & tmpStr.Substring(8, tmpStr.Length - 8) & " [" & comn.hex2ascii(tmpStr.Substring(8, tmpStr.Length - 8)) & "]", emu_common.Common.ReceiveEvents.LOG)
 
                     RaiseEvent OnResponse("-- BREAKDOWN END --", Common.ReceiveEvents.LOG)
                 Catch ex As Exception
@@ -1371,105 +1570,7 @@
         End Try
     End Function
 
-    Private Function ConvertDecToHex(ByVal decData As Integer) As String
-        Dim tmpHex As String = Hex(decData)
-        Try
-            Return IIf(tmpHex.Length = 1, "0" & tmpHex, tmpHex)
-        Catch ex As Exception
-            Return Nothing
-        End Try
-    End Function
 
-    Private Function ConvertHexToBinary(ByVal hexData As String) As Integer
-        Dim decData As Integer = Nothing
-
-        Try
-            decData = ConvertHexToDec(hexData)
-            Return Convert.ToString(decData, 2)
-        Catch ex As Exception
-            Return 0
-        End Try
-    End Function
-
-    Private Function ConvertHexToDec(ByVal hexData As String) As Integer
-        Try
-            Return Convert.ToInt32(hexData, 16)
-        Catch ex As Exception
-            Return 0
-        End Try
-    End Function
-
-    Private Function ConvertHexToASC(ByVal hexData As String) As String
-        Try
-            ConvertHexToASC = Convert.ToChar(System.Convert.ToUInt32(hexData, 16)).ToString
-        Catch ex As Exception
-            Return Nothing
-        End Try
-    End Function
-
-    Private Function ConvertHexToSingle(ByVal hexValue As String) As Single
-        Dim iInputIndex As Integer = 0
-        Dim iOutputIndex As Integer = 0
-        Dim bArray(3) As Byte
-
-        Try
-            For iInputIndex = 0 To hexValue.Length - 1 Step 2
-                bArray(iOutputIndex) = Byte.Parse(hexValue.Chars(iInputIndex) & hexValue.Chars(iInputIndex + 1), Globalization.NumberStyles.HexNumber)
-                iOutputIndex += 1
-            Next
-
-            Array.Reverse(bArray)
-
-            Return BitConverter.ToSingle(bArray, 0)
-        Catch ex As Exception
-            Return 0
-        End Try
-    End Function
-
-    Public Function hex2ascii(ByVal hextext As String) As String
-        Dim Y As Long
-        Dim num As String
-        Dim value As String = String.Empty
-
-        For Y = 1 To Len(hextext)
-            num = Mid(hextext, Y, 2)
-            value = value & Chr(Val("&h" & num))
-            Y = Y + 1
-        Next Y
-
-        hex2ascii = value
-    End Function
-
-    Private Function ConvertHexStringToASCII(ByVal hexDataString As String) As String
-        Try
-            ConvertHexStringToASCII = "" 'Convert.ToChar(System.Convert.ToUInt32(hexData, 16)).ToString
-        Catch ex As Exception
-            Return Nothing
-        End Try
-    End Function
-
-    Private Function BCD_to_Int(ByVal LowW As Int16, ByVal HighW As Int16) As Int32
-
-        Dim tempH As Int32 = 0
-        Dim tempL As Int32 = 0
-        Dim RunH As Int32 = 0
-        Dim RunL As Int32 = 0
-
-        For i As Integer = 0 To 3
-            tempH = (HighW And &HF000) >> 12    'get the high byte
-            RunH *= 10
-            RunH = RunH + tempH
-            HighW <<= 4
-
-            tempL = (LowW And &HF000) >> 12     'get the high byte
-            RunL *= 10
-            RunL = RunL + tempL
-            LowW <<= 4
-        Next i
-
-        Return (RunH * 10000) + RunL
-
-    End Function
 
     Public Sub dispose()
         _timeoutTimer.Dispose()

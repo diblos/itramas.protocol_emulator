@@ -40,6 +40,16 @@ Partial Class Form1
         Me.GroupSerial2 = New System.Windows.Forms.GroupBox
         Me.ComboBaud2 = New System.Windows.Forms.ComboBox
         Me.ComboCOM2 = New System.Windows.Forms.ComboBox
+        Me.TabPage3 = New System.Windows.Forms.TabPage
+        Me.GroupBox1 = New System.Windows.Forms.GroupBox
+        Me.Button4 = New System.Windows.Forms.Button
+        Me.Button3 = New System.Windows.Forms.Button
+        Me.Button2 = New System.Windows.Forms.Button
+        Me.Button1 = New System.Windows.Forms.Button
+        Me.btnCOM3 = New System.Windows.Forms.Button
+        Me.GroupSerial3 = New System.Windows.Forms.GroupBox
+        Me.ComboBaud3 = New System.Windows.Forms.ComboBox
+        Me.ComboCOM3 = New System.Windows.Forms.ComboBox
         Me.GroupVerbose = New System.Windows.Forms.GroupBox
         Me.ListBox1 = New System.Windows.Forms.ListBox
         Me.Group1.SuspendLayout()
@@ -50,6 +60,9 @@ Partial Class Form1
         Me.TabPage2.SuspendLayout()
         Me.GroupBox3.SuspendLayout()
         Me.GroupSerial2.SuspendLayout()
+        Me.TabPage3.SuspendLayout()
+        Me.GroupBox1.SuspendLayout()
+        Me.GroupSerial3.SuspendLayout()
         Me.GroupVerbose.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -57,7 +70,7 @@ Partial Class Form1
         '
         Me.StatusStrip1.Location = New System.Drawing.Point(0, 401)
         Me.StatusStrip1.Name = "StatusStrip1"
-        Me.StatusStrip1.Size = New System.Drawing.Size(934, 22)
+        Me.StatusStrip1.Size = New System.Drawing.Size(792, 22)
         Me.StatusStrip1.TabIndex = 8
         Me.StatusStrip1.Text = "StatusStrip1"
         '
@@ -67,7 +80,7 @@ Partial Class Form1
         Me.Group1.Dock = System.Windows.Forms.DockStyle.Top
         Me.Group1.Location = New System.Drawing.Point(0, 0)
         Me.Group1.Name = "Group1"
-        Me.Group1.Size = New System.Drawing.Size(934, 207)
+        Me.Group1.Size = New System.Drawing.Size(792, 207)
         Me.Group1.TabIndex = 7
         Me.Group1.TabStop = False
         Me.Group1.Text = "Device Settings"
@@ -76,11 +89,12 @@ Partial Class Form1
         '
         Me.TabControl1.Controls.Add(Me.TabPage1)
         Me.TabControl1.Controls.Add(Me.TabPage2)
+        Me.TabControl1.Controls.Add(Me.TabPage3)
         Me.TabControl1.Dock = System.Windows.Forms.DockStyle.Top
         Me.TabControl1.Location = New System.Drawing.Point(3, 16)
         Me.TabControl1.Name = "TabControl1"
         Me.TabControl1.SelectedIndex = 0
-        Me.TabControl1.Size = New System.Drawing.Size(928, 177)
+        Me.TabControl1.Size = New System.Drawing.Size(786, 177)
         Me.TabControl1.TabIndex = 7
         '
         'TabPage1
@@ -90,7 +104,7 @@ Partial Class Form1
         Me.TabPage1.Location = New System.Drawing.Point(4, 22)
         Me.TabPage1.Name = "TabPage1"
         Me.TabPage1.Padding = New System.Windows.Forms.Padding(3)
-        Me.TabPage1.Size = New System.Drawing.Size(920, 151)
+        Me.TabPage1.Size = New System.Drawing.Size(877, 151)
         Me.TabPage1.TabIndex = 0
         Me.TabPage1.Text = "Taxi Meter"
         Me.TabPage1.UseVisualStyleBackColor = True
@@ -102,7 +116,7 @@ Partial Class Form1
         Me.GroupBox2.Dock = System.Windows.Forms.DockStyle.Bottom
         Me.GroupBox2.Location = New System.Drawing.Point(3, 79)
         Me.GroupBox2.Name = "GroupBox2"
-        Me.GroupBox2.Size = New System.Drawing.Size(914, 69)
+        Me.GroupBox2.Size = New System.Drawing.Size(871, 69)
         Me.GroupBox2.TabIndex = 11
         Me.GroupBox2.TabStop = False
         Me.GroupBox2.Text = "Taxi Meter Simulation"
@@ -113,7 +127,7 @@ Partial Class Form1
         Me.btnTest.Enabled = False
         Me.btnTest.Location = New System.Drawing.Point(3, 43)
         Me.btnTest.Name = "btnTest"
-        Me.btnTest.Size = New System.Drawing.Size(908, 23)
+        Me.btnTest.Size = New System.Drawing.Size(865, 23)
         Me.btnTest.TabIndex = 12
         Me.btnTest.Text = "Test"
         Me.btnTest.UseVisualStyleBackColor = True
@@ -123,7 +137,7 @@ Partial Class Form1
         Me.btnCOM.Dock = System.Windows.Forms.DockStyle.Top
         Me.btnCOM.Location = New System.Drawing.Point(3, 16)
         Me.btnCOM.Name = "btnCOM"
-        Me.btnCOM.Size = New System.Drawing.Size(908, 23)
+        Me.btnCOM.Size = New System.Drawing.Size(865, 23)
         Me.btnCOM.TabIndex = 11
         Me.btnCOM.Text = "Start"
         Me.btnCOM.UseVisualStyleBackColor = True
@@ -135,7 +149,7 @@ Partial Class Form1
         Me.GroupSerial.Dock = System.Windows.Forms.DockStyle.Top
         Me.GroupSerial.Location = New System.Drawing.Point(3, 3)
         Me.GroupSerial.Name = "GroupSerial"
-        Me.GroupSerial.Size = New System.Drawing.Size(914, 70)
+        Me.GroupSerial.Size = New System.Drawing.Size(871, 70)
         Me.GroupSerial.TabIndex = 2
         Me.GroupSerial.TabStop = False
         Me.GroupSerial.Text = "Serial Connection"
@@ -147,7 +161,7 @@ Partial Class Form1
         Me.ComboBaud.FormattingEnabled = True
         Me.ComboBaud.Location = New System.Drawing.Point(3, 37)
         Me.ComboBaud.Name = "ComboBaud"
-        Me.ComboBaud.Size = New System.Drawing.Size(908, 21)
+        Me.ComboBaud.Size = New System.Drawing.Size(865, 21)
         Me.ComboBaud.TabIndex = 5
         '
         'ComboCOM
@@ -157,7 +171,7 @@ Partial Class Form1
         Me.ComboCOM.FormattingEnabled = True
         Me.ComboCOM.Location = New System.Drawing.Point(3, 16)
         Me.ComboCOM.Name = "ComboCOM"
-        Me.ComboCOM.Size = New System.Drawing.Size(908, 21)
+        Me.ComboCOM.Size = New System.Drawing.Size(865, 21)
         Me.ComboCOM.TabIndex = 4
         '
         'TabPage2
@@ -167,7 +181,7 @@ Partial Class Form1
         Me.TabPage2.Location = New System.Drawing.Point(4, 22)
         Me.TabPage2.Name = "TabPage2"
         Me.TabPage2.Padding = New System.Windows.Forms.Padding(3)
-        Me.TabPage2.Size = New System.Drawing.Size(920, 151)
+        Me.TabPage2.Size = New System.Drawing.Size(877, 151)
         Me.TabPage2.TabIndex = 1
         Me.TabPage2.Text = "Cashless Terminal "
         Me.TabPage2.UseVisualStyleBackColor = True
@@ -179,7 +193,7 @@ Partial Class Form1
         Me.GroupBox3.Dock = System.Windows.Forms.DockStyle.Bottom
         Me.GroupBox3.Location = New System.Drawing.Point(3, 79)
         Me.GroupBox3.Name = "GroupBox3"
-        Me.GroupBox3.Size = New System.Drawing.Size(914, 69)
+        Me.GroupBox3.Size = New System.Drawing.Size(871, 69)
         Me.GroupBox3.TabIndex = 12
         Me.GroupBox3.TabStop = False
         Me.GroupBox3.Text = "Cashless Terminal Simulation"
@@ -190,7 +204,7 @@ Partial Class Form1
         Me.btnTest2.Enabled = False
         Me.btnTest2.Location = New System.Drawing.Point(3, 43)
         Me.btnTest2.Name = "btnTest2"
-        Me.btnTest2.Size = New System.Drawing.Size(908, 23)
+        Me.btnTest2.Size = New System.Drawing.Size(865, 23)
         Me.btnTest2.TabIndex = 12
         Me.btnTest2.Text = "Test"
         Me.btnTest2.UseVisualStyleBackColor = True
@@ -200,7 +214,7 @@ Partial Class Form1
         Me.btnCOM2.Dock = System.Windows.Forms.DockStyle.Top
         Me.btnCOM2.Location = New System.Drawing.Point(3, 16)
         Me.btnCOM2.Name = "btnCOM2"
-        Me.btnCOM2.Size = New System.Drawing.Size(908, 23)
+        Me.btnCOM2.Size = New System.Drawing.Size(865, 23)
         Me.btnCOM2.TabIndex = 11
         Me.btnCOM2.Text = "Start"
         Me.btnCOM2.UseVisualStyleBackColor = True
@@ -212,7 +226,7 @@ Partial Class Form1
         Me.GroupSerial2.Dock = System.Windows.Forms.DockStyle.Top
         Me.GroupSerial2.Location = New System.Drawing.Point(3, 3)
         Me.GroupSerial2.Name = "GroupSerial2"
-        Me.GroupSerial2.Size = New System.Drawing.Size(914, 70)
+        Me.GroupSerial2.Size = New System.Drawing.Size(871, 70)
         Me.GroupSerial2.TabIndex = 3
         Me.GroupSerial2.TabStop = False
         Me.GroupSerial2.Text = "Serial Connection"
@@ -224,7 +238,7 @@ Partial Class Form1
         Me.ComboBaud2.FormattingEnabled = True
         Me.ComboBaud2.Location = New System.Drawing.Point(3, 37)
         Me.ComboBaud2.Name = "ComboBaud2"
-        Me.ComboBaud2.Size = New System.Drawing.Size(908, 21)
+        Me.ComboBaud2.Size = New System.Drawing.Size(865, 21)
         Me.ComboBaud2.TabIndex = 5
         '
         'ComboCOM2
@@ -234,8 +248,117 @@ Partial Class Form1
         Me.ComboCOM2.FormattingEnabled = True
         Me.ComboCOM2.Location = New System.Drawing.Point(3, 16)
         Me.ComboCOM2.Name = "ComboCOM2"
-        Me.ComboCOM2.Size = New System.Drawing.Size(908, 21)
+        Me.ComboCOM2.Size = New System.Drawing.Size(865, 21)
         Me.ComboCOM2.TabIndex = 4
+        '
+        'TabPage3
+        '
+        Me.TabPage3.Controls.Add(Me.GroupBox1)
+        Me.TabPage3.Controls.Add(Me.GroupSerial3)
+        Me.TabPage3.Location = New System.Drawing.Point(4, 22)
+        Me.TabPage3.Name = "TabPage3"
+        Me.TabPage3.Padding = New System.Windows.Forms.Padding(3)
+        Me.TabPage3.Size = New System.Drawing.Size(778, 151)
+        Me.TabPage3.TabIndex = 2
+        Me.TabPage3.Text = "OBU"
+        Me.TabPage3.UseVisualStyleBackColor = True
+        '
+        'GroupBox1
+        '
+        Me.GroupBox1.Controls.Add(Me.Button4)
+        Me.GroupBox1.Controls.Add(Me.Button3)
+        Me.GroupBox1.Controls.Add(Me.Button2)
+        Me.GroupBox1.Controls.Add(Me.Button1)
+        Me.GroupBox1.Controls.Add(Me.btnCOM3)
+        Me.GroupBox1.Dock = System.Windows.Forms.DockStyle.Bottom
+        Me.GroupBox1.Location = New System.Drawing.Point(3, 79)
+        Me.GroupBox1.Name = "GroupBox1"
+        Me.GroupBox1.Size = New System.Drawing.Size(772, 69)
+        Me.GroupBox1.TabIndex = 14
+        Me.GroupBox1.TabStop = False
+        Me.GroupBox1.Text = "On-Board Unit Simulation"
+        '
+        'Button4
+        '
+        Me.Button4.Enabled = False
+        Me.Button4.Location = New System.Drawing.Point(624, 40)
+        Me.Button4.Name = "Button4"
+        Me.Button4.Size = New System.Drawing.Size(200, 23)
+        Me.Button4.TabIndex = 17
+        Me.Button4.Text = "Daily Accumulated Statistics"
+        Me.Button4.UseVisualStyleBackColor = True
+        '
+        'Button3
+        '
+        Me.Button3.Enabled = False
+        Me.Button3.Location = New System.Drawing.Point(418, 40)
+        Me.Button3.Name = "Button3"
+        Me.Button3.Size = New System.Drawing.Size(200, 23)
+        Me.Button3.TabIndex = 16
+        Me.Button3.Text = "Accumulated Statistics"
+        Me.Button3.UseVisualStyleBackColor = True
+        '
+        'Button2
+        '
+        Me.Button2.Enabled = False
+        Me.Button2.Location = New System.Drawing.Point(212, 40)
+        Me.Button2.Name = "Button2"
+        Me.Button2.Size = New System.Drawing.Size(200, 23)
+        Me.Button2.TabIndex = 15
+        Me.Button2.Text = "Send Report"
+        Me.Button2.UseVisualStyleBackColor = True
+        '
+        'Button1
+        '
+        Me.Button1.Enabled = False
+        Me.Button1.Location = New System.Drawing.Point(6, 40)
+        Me.Button1.Name = "Button1"
+        Me.Button1.Size = New System.Drawing.Size(200, 23)
+        Me.Button1.TabIndex = 14
+        Me.Button1.Text = "Get Meter Info"
+        Me.Button1.UseVisualStyleBackColor = True
+        '
+        'btnCOM3
+        '
+        Me.btnCOM3.Dock = System.Windows.Forms.DockStyle.Top
+        Me.btnCOM3.Location = New System.Drawing.Point(3, 16)
+        Me.btnCOM3.Name = "btnCOM3"
+        Me.btnCOM3.Size = New System.Drawing.Size(766, 23)
+        Me.btnCOM3.TabIndex = 11
+        Me.btnCOM3.Text = "Start"
+        Me.btnCOM3.UseVisualStyleBackColor = True
+        '
+        'GroupSerial3
+        '
+        Me.GroupSerial3.Controls.Add(Me.ComboBaud3)
+        Me.GroupSerial3.Controls.Add(Me.ComboCOM3)
+        Me.GroupSerial3.Dock = System.Windows.Forms.DockStyle.Top
+        Me.GroupSerial3.Location = New System.Drawing.Point(3, 3)
+        Me.GroupSerial3.Name = "GroupSerial3"
+        Me.GroupSerial3.Size = New System.Drawing.Size(772, 70)
+        Me.GroupSerial3.TabIndex = 13
+        Me.GroupSerial3.TabStop = False
+        Me.GroupSerial3.Text = "Serial Connection"
+        '
+        'ComboBaud3
+        '
+        Me.ComboBaud3.Dock = System.Windows.Forms.DockStyle.Top
+        Me.ComboBaud3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.ComboBaud3.FormattingEnabled = True
+        Me.ComboBaud3.Location = New System.Drawing.Point(3, 37)
+        Me.ComboBaud3.Name = "ComboBaud3"
+        Me.ComboBaud3.Size = New System.Drawing.Size(766, 21)
+        Me.ComboBaud3.TabIndex = 5
+        '
+        'ComboCOM3
+        '
+        Me.ComboCOM3.Dock = System.Windows.Forms.DockStyle.Top
+        Me.ComboCOM3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.ComboCOM3.FormattingEnabled = True
+        Me.ComboCOM3.Location = New System.Drawing.Point(3, 16)
+        Me.ComboCOM3.Name = "ComboCOM3"
+        Me.ComboCOM3.Size = New System.Drawing.Size(766, 21)
+        Me.ComboCOM3.TabIndex = 4
         '
         'GroupVerbose
         '
@@ -261,7 +384,7 @@ Partial Class Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(934, 423)
+        Me.ClientSize = New System.Drawing.Size(792, 423)
         Me.Controls.Add(Me.StatusStrip1)
         Me.Controls.Add(Me.Group1)
         Me.Controls.Add(Me.GroupVerbose)
@@ -276,6 +399,9 @@ Partial Class Form1
         Me.TabPage2.ResumeLayout(False)
         Me.GroupBox3.ResumeLayout(False)
         Me.GroupSerial2.ResumeLayout(False)
+        Me.TabPage3.ResumeLayout(False)
+        Me.GroupBox1.ResumeLayout(False)
+        Me.GroupSerial3.ResumeLayout(False)
         Me.GroupVerbose.ResumeLayout(False)
         Me.ResumeLayout(False)
         Me.PerformLayout()
@@ -300,5 +426,15 @@ Partial Class Form1
     Friend WithEvents GroupBox3 As System.Windows.Forms.GroupBox
     Friend WithEvents btnTest2 As System.Windows.Forms.Button
     Friend WithEvents btnCOM2 As System.Windows.Forms.Button
+    Friend WithEvents TabPage3 As System.Windows.Forms.TabPage
+    Friend WithEvents GroupBox1 As System.Windows.Forms.GroupBox
+    Friend WithEvents btnCOM3 As System.Windows.Forms.Button
+    Friend WithEvents GroupSerial3 As System.Windows.Forms.GroupBox
+    Friend WithEvents ComboBaud3 As System.Windows.Forms.ComboBox
+    Friend WithEvents ComboCOM3 As System.Windows.Forms.ComboBox
+    Friend WithEvents Button1 As System.Windows.Forms.Button
+    Friend WithEvents Button4 As System.Windows.Forms.Button
+    Friend WithEvents Button3 As System.Windows.Forms.Button
+    Friend WithEvents Button2 As System.Windows.Forms.Button
 
 End Class
