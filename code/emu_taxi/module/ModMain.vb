@@ -7,6 +7,7 @@
     Public Const ENTITY_DC As String = "Driver Console> "
     Public Const ENTITY_TM As String = "Taxi Meter> "
     Public Const ENTITY_CT As String = "Cashless Terminal> "
+    Public Const ENTITY_UFO As String = "Unidentified> "
     '==================================================================
 
     Public Const DEFAULT_DATESTRING As String = "yyyy-MM-dd HH:mm:ss"

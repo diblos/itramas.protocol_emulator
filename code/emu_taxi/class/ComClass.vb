@@ -13,7 +13,8 @@ Public Class ComClass
 
     Private _replyTimer As System.Timers.Timer
     Private _timeoutTimer As System.Timers.Timer
-    Private _control As System.Timers.Timer
+    Private _devcontrol As System.Timers.Timer
+    Private _obucontrol As System.Timers.Timer
     Private Const TIMEOUT As Integer = 120 '(seconds)
     Private TIMEOUT_COUNTER As Integer = 0
 
@@ -24,7 +25,8 @@ Public Class ComClass
 
     Private _devicemode As Common.Device = Common.Device.TaxiMeter
 
-    Private CONTROL_FLAG As Boolean = False
+    Private DEV_CONTROL_FLAG As Boolean = False
+    Private OBU_CONTROL_FLAG As Boolean = False
 
     Dim curCulture As CultureInfo = Thread.CurrentThread.CurrentCulture
     Dim tInfo As TextInfo = curCulture.TextInfo()
@@ -311,10 +313,12 @@ Public Class ComClass
         _replyTimer = New System.Timers.Timer(RESPONSE_TIME) '1s interval
         'Set TimeOut Timer
         _timeoutTimer = New System.Timers.Timer(1000) '1s interval
-        _control = New System.Timers.Timer(1000)
+        _devcontrol = New System.Timers.Timer(1000)
+        _obucontrol = New System.Timers.Timer(1000)
         AddHandler _replyTimer.Elapsed, AddressOf replyHandler
         AddHandler _timeoutTimer.Elapsed, AddressOf TimeOutHandler
-        AddHandler _control.Elapsed, AddressOf ControlHandler
+        AddHandler _devcontrol.Elapsed, AddressOf DEVControlHandler
+        AddHandler _obucontrol.Elapsed, AddressOf OBUControlHandler
     End Sub
 
     Private Sub replyHandler(ByVal sender As Object, ByVal e As System.Timers.ElapsedEventArgs)
@@ -345,10 +349,16 @@ Public Class ComClass
         Debug.Print("TIMEOUT_COUNTER:" & TIMEOUT_COUNTER)
     End Sub
 
-    Private Sub ControlHandler(ByVal sender As Object, ByVal e As System.Timers.ElapsedEventArgs)
-        CONTROL_FLAG = False
+    Private Sub DEVControlHandler(ByVal sender As Object, ByVal e As System.Timers.ElapsedEventArgs)
+        DEV_CONTROL_FLAG = False
+        DEVDataProcess(buffer)
+        _devcontrol.Stop()
+    End Sub
+
+    Private Sub OBUControlHandler(ByVal sender As Object, ByVal e As System.Timers.ElapsedEventArgs)
+        OBU_CONTROL_FLAG = False
         OBUDataProcess(buffer)
-        _control.Stop()
+        _obucontrol.Stop()
     End Sub
 
     Private Sub DataReceivedHandler(ByVal sender As Object, ByVal e As System.IO.Ports.SerialDataReceivedEventArgs)
@@ -401,6 +411,11 @@ Public Class ComClass
         End If
 
         If Not IsNothing(buffer) Then
+            If DEV_CONTROL_FLAG = False Then
+                DEV_CONTROL_FLAG = True
+                _devcontrol.Start()
+            End If
+
             ReDim arrLastReceived(UBound(buffer))
             arrLastReceived = buffer
             blnChkInput = True
@@ -424,193 +439,193 @@ Public Class ComClass
             End Try
         End If
 
-        If blnChkInput And blnETX Then
-            blnETX = False
-            ReDim arrLastReceived(UBound(arrByte))
-            arrLastReceived = arrByte
-            buffer = Nothing 'Clear the inData after reassign array
+        'If blnChkInput And blnETX Then
+        '    blnETX = False
+        '    ReDim arrLastReceived(UBound(arrByte))
+        '    arrLastReceived = arrByte
+        '    buffer = Nothing 'Clear the inData after reassign array
 
-            If UBound(arrByte) > 3 Then
+        '    If UBound(arrByte) > 3 Then
 
-                refine(arrByte, intLenData)
+        '        refine(arrByte, intLenData)
 
-                'Debug.Print(arrByte.Length)
-                'Debug.Print(comn.ByteArrayToString(arrByte))
+        '        'Debug.Print(arrByte.Length)
+        '        'Debug.Print(comn.ByteArrayToString(arrByte))
 
-                'Package verification
-                If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
+        '        'Package verification
+        '        If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
 
-                    If arrByte.Length = 1 And arrByte(0) = &H6 Then
-                        RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                        RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                        Array.Resize(buffer, 0)
-                    Else
-                        Select Case _devicemode
-                            Case emu_common.Common.Device.TaxiMeter
+        '            If arrByte.Length = 1 And arrByte(0) = &H6 Then
+        '                RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+        '                Array.Resize(buffer, 0)
+        '            Else
+        '                Select Case _devicemode
+        '                    Case emu_common.Common.Device.TaxiMeter
 
-                                '2A 5E 7E
-                                Dim Write_Datetime_to_TaxiMeter As Byte() = {&H2A, &H5E, &H7E}
+        '                        '2A 5E 7E
+        '                        Dim Write_Datetime_to_TaxiMeter As Byte() = {&H2A, &H5E, &H7E}
 
-                                '2A646E0105FE00
-                                Dim Send_Report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
+        '                        '2A646E0105FE00
+        '                        Dim Send_Report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
 
-                                '2A646E05050201
-                                Dim Get_Meter_Info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
+        '                        '2A646E05050201
+        '                        Dim Get_Meter_Info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
 
-                                '2A646E0305FC00
-                                Dim Get_Accumulated_Statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
+        '                        '2A646E0305FC00
+        '                        Dim Get_Accumulated_Statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
 
-                                '2A646E06050101
-                                Dim Get_Daily_Accumulated_Statistics As Byte() = {&H2A, &H64, &H6E, &H6, &H5, &H1, &H1}
+        '                        '2A646E06050101
+        '                        Dim Get_Daily_Accumulated_Statistics As Byte() = {&H2A, &H64, &H6E, &H6, &H5, &H1, &H1}
 
-                                If IsDatetimeWrite(arrByte, Write_Datetime_to_TaxiMeter) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Write Datetime to TaxiMeter" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("WRITE DATETIME TO TAXIMETER", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                ElseIf AreArraysEqual(arrByte, Get_Meter_Info) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Get Meter Info" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("GET METER INFO", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                ElseIf AreArraysEqual(arrByte, Send_Report) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Send Report" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("SEND REPORT", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                ElseIf AreArraysEqual(arrByte, Get_Accumulated_Statistics) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Get Accumulated Statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("GET ACCUMULATED STATISTICS", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                ElseIf AreArraysEqual(arrByte, Get_Daily_Accumulated_Statistics) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "Get Daily Accumulated Statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("GET DAILY ACCUMULATED STATISTICS", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                Else
-                                    Try
-                                        '02 03 16 36 30
-                                        If SaleFilter(arrByte) Then 'HOWTO FILTER OUT SALE TRANSACTION IN TAXIMETER MODE
+        '                        If IsDatetimeWrite(arrByte, Write_Datetime_to_TaxiMeter) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "Write Datetime to TaxiMeter" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("WRITE DATETIME TO TAXIMETER", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        ElseIf AreArraysEqual(arrByte, Get_Meter_Info) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "Get Meter Info" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("GET METER INFO", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        ElseIf AreArraysEqual(arrByte, Send_Report) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "Send Report" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("SEND REPORT", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        ElseIf AreArraysEqual(arrByte, Get_Accumulated_Statistics) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "Get Accumulated Statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("GET ACCUMULATED STATISTICS", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        ElseIf AreArraysEqual(arrByte, Get_Daily_Accumulated_Statistics) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "Get Daily Accumulated Statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("GET DAILY ACCUMULATED STATISTICS", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        Else
+        '                            Try
+        '                                '02 03 16 36 30
+        '                                If SaleFilter(arrByte) Then 'HOWTO FILTER OUT SALE TRANSACTION IN TAXIMETER MODE
 
-                                            If Not IsApproval(arrByte) Then Throw New Exception("Not Sale Approval")
+        '                                    If Not IsApproval(arrByte) Then Throw New Exception("Not Sale Approval")
 
-                                            RaiseEvent OnResponse(ENTITY_CT & "Sale Approval" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                            RaiseEvent OnEvent("SALE APPROVAL", Common.TRX.RECEIVE)
+        '                                    RaiseEvent OnResponse(ENTITY_CT & "Sale Approval" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                                    RaiseEvent OnEvent("SALE APPROVAL", Common.TRX.RECEIVE)
 
-                                            Breakdowns(arrByte)
-                                            Array.Resize(buffer, 0)
-                                            Array.Resize(arrByte, 0)
-                                        ElseIf arrByte(0) <> STX Then
-                                            Throw New Exception("Unknown Message")
-                                        End If
-                                    Catch ex As Exception
-                                        If Not CONTROL_FLAG Then
-                                            RaiseEvent OnResponse(ENTITY_CT & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                            RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                            Array.Resize(buffer, 0)
-                                        End If
-                                    End Try
-                                End If
+        '                                    Breakdowns(arrByte)
+        '                                    Array.Resize(buffer, 0)
+        '                                    Array.Resize(arrByte, 0)
+        '                                ElseIf arrByte(0) <> STX Then
+        '                                    Throw New Exception("Unknown Message")
+        '                                End If
+        '                            Catch ex As Exception
+        '                                If Not CONTROL_FLAG Then
+        '                                    RaiseEvent OnResponse(ENTITY_CT & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+        '                                    Array.Resize(buffer, 0)
+        '                                End If
+        '                            End Try
+        '                        End If
 
-                            Case emu_common.Common.Device.CashlessTerminal
-                                'Debug.Print("RATES")
+        '                    Case emu_common.Common.Device.CashlessTerminal
+        '                        'Debug.Print("RATES")
 
-                                'RaiseEvent OnResponse(ENTITY_CT & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                'RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                'Array.Resize(buffer, 0)
+        '                        'RaiseEvent OnResponse(ENTITY_CT & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                        'RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+        '                        'Array.Resize(buffer, 0)
 
-                                Try
-                                    '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
-                                    Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
-                                    'If AreArraysEqual(arrByte, Sale_Transaction) Then
-                                    If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
-                                        'If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
+        '                        Try
+        '                            '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
+        '                            Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
+        '                            'If AreArraysEqual(arrByte, Sale_Transaction) Then
+        '                            If (arrByte(0) = STX) And (arrByte(intLenData - 1) = ETX) Then
+        '                                'If arrByte(0) = STX And arrByte(UBound(arrByte) - 1) = ETX Then
 
-                                        If IsApproval(arrByte) Then Throw New Exception("Not Sale Transaction")
+        '                                If IsApproval(arrByte) Then Throw New Exception("Not Sale Transaction")
 
-                                        RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                        RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
+        '                                RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                                RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
 
-                                        Breakdowns(arrByte)
-                                        'Array.Resize(buffer, 0)
-                                    ElseIf arrByte(0) <> STX Then
-                                        Throw New Exception("Unknown Message")
-                                    End If
-                                Catch ex As Exception
-                                    RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
-                                    'If Not CONTROL_FLAG Then Array.Resize(buffer, 0)
-                                End Try
+        '                                Breakdowns(arrByte)
+        '                                'Array.Resize(buffer, 0)
+        '                            ElseIf arrByte(0) <> STX Then
+        '                                Throw New Exception("Unknown Message")
+        '                            End If
+        '                        Catch ex As Exception
+        '                            RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+        '                            'If Not CONTROL_FLAG Then Array.Resize(buffer, 0)
+        '                        End Try
 
-                        End Select
-                    End If
+        '                End Select
+        '            End If
 
 
-                End If
-            Else
-                intI = UBound(arrByte)
-                intJ = intI
-            End If
-        Else
+        '        End If
+        '    Else
+        '        intI = UBound(arrByte)
+        '        intJ = intI
+        '    End If
+        'Else
 
-            If arrByte.Length = 0 Then Exit Sub
-            If arrByte.Length = 1 And arrByte(UBound(arrByte)) = &H6 Then
-                RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
-                Array.Resize(buffer, 0)
-            Else
-                Select Case _devicemode
-                    Case emu_common.Common.Device.TaxiMeter
-                        '2A 5E 7E
-                        Dim write_datetime_to_taximeter As Byte() = {&H2A, &H5E, &H7E}
+        '    If arrByte.Length = 0 Then Exit Sub
+        '    If arrByte.Length = 1 And arrByte(UBound(arrByte)) = &H6 Then
+        '        RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '        RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+        '        Array.Resize(buffer, 0)
+        '    Else
+        '        Select Case _devicemode
+        '            Case emu_common.Common.Device.TaxiMeter
+        '                '2A 5E 7E
+        '                Dim write_datetime_to_taximeter As Byte() = {&H2A, &H5E, &H7E}
 
-                        '2A646E0105FE00
-                        Dim send_report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
+        '                '2A646E0105FE00
+        '                Dim send_report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
 
-                        '2A646E05050201
-                        Dim get_meter_info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
+        '                '2A646E05050201
+        '                Dim get_meter_info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
 
-                        '2A646E0305FC00
-                        Dim get_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
+        '                '2A646E0305FC00
+        '                Dim get_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
 
-                        '2A646E06050101
-                        Dim get_daily_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H6, &H5, &H1, &H1}
+        '                '2A646E06050101
+        '                Dim get_daily_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H6, &H5, &H1, &H1}
 
-                        If AreArraysEqual(arrByte, get_meter_info) Then
-                            RaiseEvent OnResponse(ENTITY_OBU & "get meter info" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                            RaiseEvent OnEvent("get meter info", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
-                        ElseIf AreArraysEqual(arrByte, send_report) Then
-                            RaiseEvent OnResponse(ENTITY_OBU & "send report" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                            RaiseEvent OnEvent("send report", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
-                        ElseIf AreArraysEqual(arrByte, get_accumulated_statistics) Then
-                            RaiseEvent OnResponse(ENTITY_OBU & "get accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                            RaiseEvent OnEvent("get accumulated statistics", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
-                        ElseIf AreArraysEqual(arrByte, get_daily_accumulated_statistics) Then
-                            RaiseEvent OnResponse(ENTITY_OBU & "get daily accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                            RaiseEvent OnEvent("get daily accumulated statistics", Common.TRX.RECEIVE)
-                            Array.Resize(buffer, 0)
-                        Else
-                            Try
-                                If IsDatetimeWrite(arrByte, write_datetime_to_taximeter) Then
-                                    RaiseEvent OnResponse(ENTITY_OBU & "write datetime to taximeter" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                    RaiseEvent OnEvent("write datetime to taximeter", Common.TRX.RECEIVE)
-                                    Array.Resize(buffer, 0)
-                                ElseIf arrByte.Length > 15 Then
-                                    'If arrByte.Length > 400 Then Throw New Exception("unknown message")
-                                End If
+        '                If AreArraysEqual(arrByte, get_meter_info) Then
+        '                    RaiseEvent OnResponse(ENTITY_OBU & "get meter info" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                    RaiseEvent OnEvent("get meter info", Common.TRX.RECEIVE)
+        '                    Array.Resize(buffer, 0)
+        '                ElseIf AreArraysEqual(arrByte, send_report) Then
+        '                    RaiseEvent OnResponse(ENTITY_OBU & "send report" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                    RaiseEvent OnEvent("send report", Common.TRX.RECEIVE)
+        '                    Array.Resize(buffer, 0)
+        '                ElseIf AreArraysEqual(arrByte, get_accumulated_statistics) Then
+        '                    RaiseEvent OnResponse(ENTITY_OBU & "get accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                    RaiseEvent OnEvent("get accumulated statistics", Common.TRX.RECEIVE)
+        '                    Array.Resize(buffer, 0)
+        '                ElseIf AreArraysEqual(arrByte, get_daily_accumulated_statistics) Then
+        '                    RaiseEvent OnResponse(ENTITY_OBU & "get daily accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                    RaiseEvent OnEvent("get daily accumulated statistics", Common.TRX.RECEIVE)
+        '                    Array.Resize(buffer, 0)
+        '                Else
+        '                    Try
+        '                        If IsDatetimeWrite(arrByte, write_datetime_to_taximeter) Then
+        '                            RaiseEvent OnResponse(ENTITY_OBU & "write datetime to taximeter" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                            RaiseEvent OnEvent("write datetime to taximeter", Common.TRX.RECEIVE)
+        '                            Array.Resize(buffer, 0)
+        '                        ElseIf arrByte.Length > 15 Then
+        '                            'If arrByte.Length > 400 Then Throw New Exception("unknown message")
+        '                        End If
 
-                            Catch ex As Exception
-                                RaiseEvent OnResponse(ENTITY_TM & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
-                                RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
-                                If Not CONTROL_FLAG Then Array.Resize(buffer, 0)
-                            End Try
-                        End If
-                    Case emu_common.Common.Device.CashlessTerminal
+        '                    Catch ex As Exception
+        '                        RaiseEvent OnResponse(ENTITY_TM & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
+        '                        RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
+        '                        If Not CONTROL_FLAG Then Array.Resize(buffer, 0)
+        '                    End Try
+        '                End If
+        '            Case emu_common.Common.Device.CashlessTerminal
 
-                End Select
-            End If
-        End If
+        '        End Select
+        '    End If
+        'End If
 
-        If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte))
+        If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte) & " | " & DEV_CONTROL_FLAG)
 
     End Sub
 
@@ -648,9 +663,9 @@ Public Class ComClass
         End If
 
         If Not IsNothing(buffer) Then
-            If CONTROL_FLAG = False Then
-                CONTROL_FLAG = True
-                _control.Start()
+            If OBU_CONTROL_FLAG = False Then
+                OBU_CONTROL_FLAG = True
+                _obucontrol.Start()
             End If
 
             ReDim arrLastReceived(UBound(buffer))
@@ -748,8 +763,144 @@ Public Class ComClass
         '    End If
         'End If
 
-        If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte) & " | " & CONTROL_FLAG)
+        If Not IsNothing(arrByte) Then Debug.Print(intBytesToRead & " | " & comn.ByteArrayToString(arrByte) & " | " & OBU_CONTROL_FLAG)
 
+    End Sub
+
+    Private Sub DEVDataProcess(ByVal data() As Byte)
+        Dim str As String = String.Empty
+        If Not IsNothing(data) Then
+            Debug.Print(data.Length)
+            Select Case data.Length
+                Case 1
+                    If data(0) = &H6 Then
+                        RaiseEvent OnResponse(IIf(_devicemode = emu_common.Common.Device.TaxiMeter, ENTITY_CT, ENTITY_TM) & "Acknowledge" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("Acknowledge", Common.TRX.RECEIVE)
+                    Else
+                        RaiseEvent OnResponse(ENTITY_UFO & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
+                    End If
+                    Array.Resize(buffer, 0)
+
+                Case 7
+                    If _devicemode = emu_common.Common.Device.TaxiMeter Then
+                        '2A646E0105FE00
+                        Dim send_report As Byte() = {&H2A, &H64, &H6E, &H1, &H5, &HFE, &H0} 'HARDCODED
+
+                        '2A646E05050201
+                        Dim get_meter_info As Byte() = {&H2A, &H64, &H6E, &H5, &H5, &H2, &H1} 'HARDCODED
+
+                        '2A646E0305FC00
+                        Dim get_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H3, &H5, &HFC, &H0}
+
+                        '2A646E06050101
+                        Dim get_daily_accumulated_statistics As Byte() = {&H2A, &H64, &H6E, &H6, &H5, &H1, &H1}
+
+                        If AreArraysEqual(data, get_meter_info) Then
+                            RaiseEvent OnResponse(ENTITY_OBU & "get meter info" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                            RaiseEvent OnEvent("get meter info", Common.TRX.RECEIVE)
+
+                        ElseIf AreArraysEqual(data, send_report) Then
+                            RaiseEvent OnResponse(ENTITY_OBU & "send report" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                            RaiseEvent OnEvent("send report", Common.TRX.RECEIVE)
+                        ElseIf AreArraysEqual(data, get_accumulated_statistics) Then
+                            RaiseEvent OnResponse(ENTITY_OBU & "get accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                            RaiseEvent OnEvent("get accumulated statistics", Common.TRX.RECEIVE)
+                        ElseIf AreArraysEqual(data, get_daily_accumulated_statistics) Then
+                            RaiseEvent OnResponse(ENTITY_OBU & "get daily accumulated statistics" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                            RaiseEvent OnEvent("get daily accumulated statistics", Common.TRX.RECEIVE)
+                        Else
+                            RaiseEvent OnResponse(ENTITY_UFO & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                            RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
+                        End If
+                    Else
+                        RaiseEvent OnResponse(ENTITY_UFO & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
+                    End If
+                    Array.Resize(buffer, 0)
+
+                Case 40 To 50
+                    Try
+                        If _devicemode = emu_common.Common.Device.CashlessTerminal Then
+                            '02003536303030303030303030313032303030301C343000123030303030303030303330301C0316
+                            Dim Sale_Transaction As Byte() = {&H2, &H0, &H35, &H36, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H31, &H30, &H32, &H30, &H30, &H30, &H30, &H1C, &H34, &H30, &H0, &H12, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H30, &H33, &H30, &H30, &H1C, &H3, &H16}
+                            If (data(0) = STX) And (data(UBound(data) - 1) = ETX) Then
+
+                                If IsApproval(data) Then Throw New Exception("Not Sale Transaction")
+
+                                RaiseEvent OnResponse(ENTITY_TM & "Sale Transaction" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                                RaiseEvent OnEvent("Sale Transaction", Common.TRX.RECEIVE)
+
+                                Breakdowns(data)
+
+                            Else
+                                Throw New Exception(ENTITY_UFO & "Unknown")
+                            End If
+                        Else
+                            Throw New Exception(ENTITY_UFO & "Unknown")
+                        End If
+                    Catch ex As Exception
+                        RaiseEvent OnResponse(ex.Message & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+
+                    End Try
+                    Array.Resize(buffer, 0)
+
+                Case Is > 320
+                    Try
+                        If _devicemode = emu_common.Common.Device.TaxiMeter Then
+                            '02 03 16 36 30
+                            If SaleFilter(data) Then 'HOWTO FILTER OUT SALE TRANSACTION IN TAXIMETER MODE
+
+                                If Not IsApproval(data) Then Throw New Exception("Not Sale Approval")
+
+                                RaiseEvent OnResponse(ENTITY_CT & "Sale Approval" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                                RaiseEvent OnEvent("SALE APPROVAL", Common.TRX.RECEIVE)
+
+                                Breakdowns(data)
+
+                            ElseIf data(0) <> STX Then
+                                Throw New Exception("Unknown Message")
+                            End If
+                        Else
+                            Throw New Exception("Unknown Message")
+                        End If
+                       
+                    Catch ex As Exception
+                        RaiseEvent OnResponse(ENTITY_UFO & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+
+                    End Try
+                        Array.Resize(buffer, 0)
+
+                Case Else
+
+                    Try
+                        If _devicemode = emu_common.Common.Device.TaxiMeter Then
+                            '2A 5E 7E
+                            Dim write_datetime_to_taximeter As Byte() = {&H2A, &H5E, &H7E}
+                            If IsDatetimeWrite(data, write_datetime_to_taximeter) Then
+                                RaiseEvent OnResponse(ENTITY_OBU & "write datetime to taximeter" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                                RaiseEvent OnEvent("write datetime to taximeter", Common.TRX.RECEIVE)
+
+                            ElseIf data.Length > 15 Then
+                                Throw New Exception("unknown message")
+                            End If
+                        Else
+                            Throw New Exception("unknown message")
+                        End If
+
+                    Catch ex As Exception
+                        RaiseEvent OnResponse(ENTITY_UFO & "unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        RaiseEvent OnEvent("unknown", Common.TRX.RECEIVE)
+
+                    End Try
+
+                        'RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                        'RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
+                    Array.Resize(buffer, 0)
+            End Select
+        End If
     End Sub
 
     Private Sub OBUDataProcess(ByVal data() As Byte)
@@ -782,7 +933,7 @@ Public Class ComClass
                     Array.Resize(buffer, 0)
 
                 Case Else
-                    RaiseEvent OnResponse(ENTITY_TM & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
+                    RaiseEvent OnResponse(ENTITY_UFO & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(data), Common.ReceiveEvents.STRING)
                     RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
                     Array.Resize(buffer, 0)
 
@@ -829,9 +980,9 @@ Public Class ComClass
         'Debug.Print(sp.BytesToRead)
 
         If intBytesToRead > 0 Then
-            If Not CONTROL_FLAG Then
-                CONTROL_FLAG = True
-                _control.Start()
+            If Not OBU_CONTROL_FLAG Then
+                OBU_CONTROL_FLAG = True
+                _obucontrol.Start()
             End If
             sp.Read(inData, 0, intBytesToRead)
             If Not IsNothing(buffer) Then
@@ -936,7 +1087,7 @@ Public Class ComClass
                                 Throw New Exception("Unknown Message")
                             End If
                         Catch ex As Exception
-                            If Not CONTROL_FLAG Then
+                            If Not OBU_CONTROL_FLAG Then
                                 RaiseEvent OnResponse(ENTITY_CT & "Unknown" & DATA_DELIMITER & comn.ByteArrayToString(arrByte), Common.ReceiveEvents.STRING)
                                 RaiseEvent OnEvent("UNKNOWN", Common.TRX.RECEIVE)
                                 Array.Resize(buffer, 0)

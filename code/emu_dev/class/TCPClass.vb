@@ -380,6 +380,28 @@ Public Class TCPClass
         End Try
     End Sub
 
+    Public Sub SendPing(ByVal value As Byte, ByVal Device As Common.Device)
+        Try
+            Dim DC_PING As Byte = &H46
+            Dim RSM_PING As Byte = &H54
+            If Not (Device = Common.Device.DriverConsole Or Device = Common.Device.RearSeatMonitor) Then Exit Sub
+            If client.Connected Then
+                Dim command As Byte = IIf(Device = Common.Device.DriverConsole, DC_PING, RSM_PING)
+                Dim s As New ArrayList
+                s.Add(value)
+
+                Dim msg() As Byte = {STX, command, value, cmmn.GetCheckSum(s.ToArray()), EOT}
+                Dim stream As NetworkStream = client.GetStream()
+                stream.Write(msg, 0, msg.Length)
+
+                RaiseEvent OnEvent(IIf(Device = emu_common.Common.Device.DriverConsole, ENTITY_DC & " Ping", ENTITY_RSM & IIf(value = &H0, " Left", " Right") & " Ping"), Common.TRX.SEND)
+                RaiseEvent OnResponse(ENTITY_STR & "Ping  " & cmmn.ByteArrayToString(cmmn.TrimBytesArray(msg)), Common.ReceiveEvents.LOG)
+            End If
+        Catch ex As Exception
+
+        End Try
+    End Sub
+
     Public Sub disconnect()
         Try
             IQPStream.Flush()

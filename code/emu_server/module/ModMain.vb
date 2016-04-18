@@ -97,6 +97,8 @@
         If Not Configuration.ConfigurationManager.AppSettings("OBU.IP") = "" Then OBU_IP = Configuration.ConfigurationManager.AppSettings("OBU.IP")
         If Not Configuration.ConfigurationManager.AppSettings("DRIVER.CONSOLE.PORT") = "" Then DRIVER_CONSOLE_PORT = Configuration.ConfigurationManager.AppSettings("DRIVER.CONSOLE.PORT")
         If Not Configuration.ConfigurationManager.AppSettings("REAR.SEAT.MONITOR.PORT") = "" Then REAR_SEAT_MONITOR_PORT = Configuration.ConfigurationManager.AppSettings("REAR.SEAT.MONITOR.PORT")
+
+        If Not Configuration.ConfigurationManager.AppSettings("SERVER.PORT") = "" Then SERVER_PORT = Configuration.ConfigurationManager.AppSettings("SERVER.PORT")
         FTP_DRIVER_INFO_FILE = DUMMY
         FTP_CONTENT_FILE = DUMMY
 

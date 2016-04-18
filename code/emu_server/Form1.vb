@@ -260,7 +260,7 @@
         Dim strHostName, strIPAddress As String
         strHostName = System.Net.Dns.GetHostName()
         strIPAddress = System.Net.Dns.GetHostEntry(strHostName).AddressList(0).ToString()
-        lstMsgs("Host Name: " & strHostName & "; IP Address: " & strIPAddress)
+        lstMsgs("Host Name: " & strHostName & "; IP Address: " & strIPAddress & "; Port: " & SERVER_PORT)
         txtIPAddress.Text = strIPAddress
         txtPort.Text = SERVER_PORT
     End Sub

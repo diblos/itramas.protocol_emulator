@@ -64,6 +64,9 @@ Partial Class Form3
         Me.txtPlate_DC = New System.Windows.Forms.TextBox
         Me.txtTrackerID_DC = New System.Windows.Forms.TextBox
         Me.gbDriver = New System.Windows.Forms.GroupBox
+        Me.GroupSOS = New System.Windows.Forms.GroupBox
+        Me.cbBD_DC = New System.Windows.Forms.CheckBox
+        Me.cbSOS_DC = New System.Windows.Forms.CheckBox
         Me.btnLoginDrv = New System.Windows.Forms.Button
         Me.Label5 = New System.Windows.Forms.Label
         Me.Label6 = New System.Windows.Forms.Label
@@ -76,9 +79,9 @@ Partial Class Form3
         Me.btnContextUpdate_RSM = New System.Windows.Forms.Button
         Me.cbSOS_RSM = New System.Windows.Forms.CheckBox
         Me.StatusStrip1 = New System.Windows.Forms.StatusStrip
-        Me.GroupSOS = New System.Windows.Forms.GroupBox
-        Me.cbBD_DC = New System.Windows.Forms.CheckBox
-        Me.cbSOS_DC = New System.Windows.Forms.CheckBox
+        Me.btnPING_RSM = New System.Windows.Forms.Button
+        Me.GroupBox1 = New System.Windows.Forms.GroupBox
+        Me.btnPING_DC = New System.Windows.Forms.Button
         Me.GroupVerbose.SuspendLayout()
         Me.Group1.SuspendLayout()
         Me.TabControl1.SuspendLayout()
@@ -97,9 +100,10 @@ Partial Class Form3
         Me.TabPage5.SuspendLayout()
         Me.gbTaxi.SuspendLayout()
         Me.gbDriver.SuspendLayout()
+        Me.GroupSOS.SuspendLayout()
         Me.TabPage6.SuspendLayout()
         Me.GroupSide.SuspendLayout()
-        Me.GroupSOS.SuspendLayout()
+        Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
         'GroupVerbose
@@ -438,6 +442,7 @@ Partial Class Form3
         '
         'gbTaxi
         '
+        Me.gbTaxi.Controls.Add(Me.GroupBox1)
         Me.gbTaxi.Controls.Add(Me.btnValidatetaxi)
         Me.gbTaxi.Controls.Add(Me.btnUpdateTaxi)
         Me.gbTaxi.Controls.Add(Me.Label7)
@@ -445,9 +450,9 @@ Partial Class Form3
         Me.gbTaxi.Controls.Add(Me.txtPlate_DC)
         Me.gbTaxi.Controls.Add(Me.txtTrackerID_DC)
         Me.gbTaxi.Dock = System.Windows.Forms.DockStyle.Right
-        Me.gbTaxi.Location = New System.Drawing.Point(205, 3)
+        Me.gbTaxi.Location = New System.Drawing.Point(91, 3)
         Me.gbTaxi.Name = "gbTaxi"
-        Me.gbTaxi.Size = New System.Drawing.Size(24, 163)
+        Me.gbTaxi.Size = New System.Drawing.Size(138, 163)
         Me.gbTaxi.TabIndex = 5
         Me.gbTaxi.TabStop = False
         Me.gbTaxi.Text = "Update Taxi profile"
@@ -520,6 +525,40 @@ Partial Class Form3
         Me.gbDriver.TabStop = False
         Me.gbDriver.Text = "Driver Login"
         '
+        'GroupSOS
+        '
+        Me.GroupSOS.Controls.Add(Me.cbBD_DC)
+        Me.GroupSOS.Controls.Add(Me.cbSOS_DC)
+        Me.GroupSOS.Dock = System.Windows.Forms.DockStyle.Bottom
+        Me.GroupSOS.Location = New System.Drawing.Point(3, 117)
+        Me.GroupSOS.Name = "GroupSOS"
+        Me.GroupSOS.Size = New System.Drawing.Size(75, 43)
+        Me.GroupSOS.TabIndex = 8
+        Me.GroupSOS.TabStop = False
+        Me.GroupSOS.Text = "SOS"
+        '
+        'cbBD_DC
+        '
+        Me.cbBD_DC.AutoSize = True
+        Me.cbBD_DC.Dock = System.Windows.Forms.DockStyle.Right
+        Me.cbBD_DC.Location = New System.Drawing.Point(-8, 16)
+        Me.cbBD_DC.Name = "cbBD_DC"
+        Me.cbBD_DC.Size = New System.Drawing.Size(80, 24)
+        Me.cbBD_DC.TabIndex = 3
+        Me.cbBD_DC.Text = "Breakdown"
+        Me.cbBD_DC.UseVisualStyleBackColor = True
+        '
+        'cbSOS_DC
+        '
+        Me.cbSOS_DC.AutoSize = True
+        Me.cbSOS_DC.Dock = System.Windows.Forms.DockStyle.Left
+        Me.cbSOS_DC.Location = New System.Drawing.Point(3, 16)
+        Me.cbSOS_DC.Name = "cbSOS_DC"
+        Me.cbSOS_DC.Size = New System.Drawing.Size(48, 24)
+        Me.cbSOS_DC.TabIndex = 2
+        Me.cbSOS_DC.Text = "SOS"
+        Me.cbSOS_DC.UseVisualStyleBackColor = True
+        '
         'btnLoginDrv
         '
         Me.btnLoginDrv.Location = New System.Drawing.Point(10, 73)
@@ -565,6 +604,7 @@ Partial Class Form3
         '
         'TabPage6
         '
+        Me.TabPage6.Controls.Add(Me.btnPING_RSM)
         Me.TabPage6.Controls.Add(Me.GroupSide)
         Me.TabPage6.Controls.Add(Me.btnContextUpdate_RSM)
         Me.TabPage6.Controls.Add(Me.cbSOS_RSM)
@@ -637,39 +677,35 @@ Partial Class Form3
         Me.StatusStrip1.TabIndex = 5
         Me.StatusStrip1.Text = "StatusStrip1"
         '
-        'GroupSOS
+        'btnPING_RSM
         '
-        Me.GroupSOS.Controls.Add(Me.cbBD_DC)
-        Me.GroupSOS.Controls.Add(Me.cbSOS_DC)
-        Me.GroupSOS.Dock = System.Windows.Forms.DockStyle.Bottom
-        Me.GroupSOS.Location = New System.Drawing.Point(3, 117)
-        Me.GroupSOS.Name = "GroupSOS"
-        Me.GroupSOS.Size = New System.Drawing.Size(75, 43)
-        Me.GroupSOS.TabIndex = 8
-        Me.GroupSOS.TabStop = False
-        Me.GroupSOS.Text = "SOS"
+        Me.btnPING_RSM.Location = New System.Drawing.Point(3, 73)
+        Me.btnPING_RSM.Name = "btnPING_RSM"
+        Me.btnPING_RSM.Size = New System.Drawing.Size(226, 23)
+        Me.btnPING_RSM.TabIndex = 8
+        Me.btnPING_RSM.Text = "Ping"
+        Me.btnPING_RSM.UseVisualStyleBackColor = True
         '
-        'cbBD_DC
+        'GroupBox1
         '
-        Me.cbBD_DC.AutoSize = True
-        Me.cbBD_DC.Dock = System.Windows.Forms.DockStyle.Right
-        Me.cbBD_DC.Location = New System.Drawing.Point(-8, 16)
-        Me.cbBD_DC.Name = "cbBD_DC"
-        Me.cbBD_DC.Size = New System.Drawing.Size(80, 24)
-        Me.cbBD_DC.TabIndex = 3
-        Me.cbBD_DC.Text = "Breakdown"
-        Me.cbBD_DC.UseVisualStyleBackColor = True
+        Me.GroupBox1.Controls.Add(Me.btnPING_DC)
+        Me.GroupBox1.Dock = System.Windows.Forms.DockStyle.Bottom
+        Me.GroupBox1.Location = New System.Drawing.Point(3, 117)
+        Me.GroupBox1.Name = "GroupBox1"
+        Me.GroupBox1.Size = New System.Drawing.Size(132, 43)
+        Me.GroupBox1.TabIndex = 9
+        Me.GroupBox1.TabStop = False
+        Me.GroupBox1.Text = "Ping"
         '
-        'cbSOS_DC
+        'btnPING_DC
         '
-        Me.cbSOS_DC.AutoSize = True
-        Me.cbSOS_DC.Dock = System.Windows.Forms.DockStyle.Left
-        Me.cbSOS_DC.Location = New System.Drawing.Point(3, 16)
-        Me.cbSOS_DC.Name = "cbSOS_DC"
-        Me.cbSOS_DC.Size = New System.Drawing.Size(48, 24)
-        Me.cbSOS_DC.TabIndex = 2
-        Me.cbSOS_DC.Text = "SOS"
-        Me.cbSOS_DC.UseVisualStyleBackColor = True
+        Me.btnPING_DC.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.btnPING_DC.Location = New System.Drawing.Point(3, 16)
+        Me.btnPING_DC.Name = "btnPING_DC"
+        Me.btnPING_DC.Size = New System.Drawing.Size(126, 24)
+        Me.btnPING_DC.TabIndex = 6
+        Me.btnPING_DC.Text = "Ping"
+        Me.btnPING_DC.UseVisualStyleBackColor = True
         '
         'Form3
         '
@@ -706,12 +742,13 @@ Partial Class Form3
         Me.gbTaxi.PerformLayout()
         Me.gbDriver.ResumeLayout(False)
         Me.gbDriver.PerformLayout()
+        Me.GroupSOS.ResumeLayout(False)
+        Me.GroupSOS.PerformLayout()
         Me.TabPage6.ResumeLayout(False)
         Me.TabPage6.PerformLayout()
         Me.GroupSide.ResumeLayout(False)
         Me.GroupSide.PerformLayout()
-        Me.GroupSOS.ResumeLayout(False)
-        Me.GroupSOS.PerformLayout()
+        Me.GroupBox1.ResumeLayout(False)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -772,5 +809,8 @@ Partial Class Form3
     Friend WithEvents GroupSOS As System.Windows.Forms.GroupBox
     Friend WithEvents cbBD_DC As System.Windows.Forms.CheckBox
     Friend WithEvents cbSOS_DC As System.Windows.Forms.CheckBox
+    Friend WithEvents btnPING_RSM As System.Windows.Forms.Button
+    Friend WithEvents GroupBox1 As System.Windows.Forms.GroupBox
+    Friend WithEvents btnPING_DC As System.Windows.Forms.Button
 
 End Class

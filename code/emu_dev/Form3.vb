@@ -310,6 +310,7 @@ Public Class Form3
         End With
 
         btnContextUpdate_RSM.Location = New Point(TabControl2.Width * 0.2, TabControl2.Height * 0.35)
+        btnPING_RSM.Location = New Point(btnContextUpdate_RSM.Left, btnContextUpdate_RSM.Bottom)
 
         txtIP.Left = GroupTCP.Width * 0.4
         txtIP.Width = (GroupTCP.Width * 0.9) - 5
@@ -515,4 +516,16 @@ Public Class Form3
         nTCP_1.SendUpdateTaxiProfile(DEFAULT_TRACKERID, DEFAULT_PLATENO)
     End Sub
 
+    Private Sub btnPING(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnPING_DC.Click, btnPING_RSM.Click
+        Dim cbSOS As Button = DirectCast(sender, Button)
+        Select Case cbSOS.Name
+            Case "btnPING_RSM"
+                Dim side As TCPClass.SOSMODE = IIf(RadioLeft.Checked, TCPClass.SOSMODE.RSM_LEFT, TCPClass.SOSMODE.RSM_RIGHT)
+                nTCP_2.SendPing(IIf(side = TCPClass.SOSMODE.RSM_LEFT, &H0, &H1), Common.Device.RearSeatMonitor)
+
+            Case "btnPING_DC"
+                nTCP_1.SendPing(&H0, emu_common.Common.Device.DriverConsole)
+
+        End Select
+    End Sub
 End Class
